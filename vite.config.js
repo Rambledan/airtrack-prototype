@@ -4,5 +4,5 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // base: '/airtrack-prototype/', // Uncomment for GitHub Pages
+  base: '/airtrack-prototype/',
 })
