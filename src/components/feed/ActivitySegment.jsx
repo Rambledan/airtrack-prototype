@@ -150,42 +150,73 @@ function TimelineBar({ startTime, endTime, score }) {
   )
 }
 
-// Frosted glass improvement callout
-function PotentialScoreCallout({ current, potential, label }) {
+// Enhanced improvement CTA for activities with optimization suggestions
+function ImprovementCTA({ current, potential, label, activityType, onPress }) {
   if (!potential || potential <= current) return null
 
   const improvement = potential - current
 
-  return (
-    <div className="mt-3 -mx-1">
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-green-50/90 to-emerald-50/70 backdrop-blur-sm border border-green-200/50 px-3 py-2.5">
-        {/* Subtle shine overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white/30 via-transparent to-transparent" />
+  // Activity-specific CTA text
+  const ctaText = {
+    running: 'See best times',
+    car: 'View alternatives',
+    walking: 'Find cleaner route',
+    cycling: 'Optimize route',
+  }
 
-        <div className="relative flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {/* Upward arrow icon */}
-            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-              <svg
-                viewBox="0 0 24 24"
-                className="w-3.5 h-3.5 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 19V5M5 12l7-7 7 7" />
-              </svg>
+  return (
+    <div className="mt-4 -mx-1">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 px-4 py-4 shadow-lg shadow-green-500/20">
+        {/* Animated shine effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 animate-pulse" />
+
+        {/* Sparkle decoration */}
+        <div className="absolute top-2 right-3 text-white/30">
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+            <path d="M12 0L14.59 8.41L23 11L14.59 13.59L12 22L9.41 13.59L1 11L9.41 8.41L12 0Z" />
+          </svg>
+        </div>
+
+        <div className="relative">
+          {/* Score improvement highlight */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-4 h-4 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-white/80 text-xs font-medium">{label}</div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-bold text-white">{potential}%</span>
+                  <span className="text-sm font-semibold text-green-200">+{improvement} pts</span>
+                </div>
+              </div>
             </div>
-            <span className="text-xs text-green-800 font-medium">{label}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-bold text-green-700">{potential}%</span>
-            <span className="text-xs font-semibold text-green-600 bg-green-100/80 px-1.5 py-0.5 rounded-full">
-              +{improvement}
-            </span>
-          </div>
+
+          {/* CTA Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onPress?.()
+            }}
+            className="w-full bg-white text-green-700 font-semibold text-sm py-2.5 px-4 rounded-lg hover:bg-green-50 transition-colors flex items-center justify-center gap-2 shadow-sm"
+          >
+            {ctaText[activityType] || 'View suggestion'}
+            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -207,6 +238,144 @@ function getImprovementLabel(activityType) {
   }
 }
 
+// Star Segment celebration component
+function StarSegmentCard({
+  activityType,
+  score,
+  scoreLevel,
+  durationMinutes,
+  startTime,
+  endTime,
+  location,
+  distanceKm,
+  avgPaceMinPerKm,
+  hasStrava,
+  starReason,
+  onViewDetail,
+  segment,
+}) {
+  const icon = ACTIVITY_ICONS[activityType] || ACTIVITY_ICONS.walking
+  const label = ACTIVITY_LABELS[activityType] || 'Activity'
+  const isRunning = activityType === 'running'
+
+  const handleCardClick = () => {
+    if (isRunning && onViewDetail) {
+      onViewDetail(segment)
+    }
+  }
+
+  return (
+    <div
+      className={`relative overflow-hidden rounded-3xl shadow-lg ${isRunning ? 'cursor-pointer' : ''}`}
+      onClick={handleCardClick}
+    >
+      {/* Golden gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-yellow-400 to-orange-400" />
+
+      {/* Subtle pattern overlay */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+      </div>
+
+      {/* Sparkle decorations */}
+      <div className="absolute top-3 right-4 text-white/40">
+        <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+          <path d="M12 0L14.59 8.41L23 11L14.59 13.59L12 22L9.41 13.59L1 11L9.41 8.41L12 0Z" />
+        </svg>
+      </div>
+      <div className="absolute bottom-12 left-3 text-white/30">
+        <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+          <path d="M12 0L14.59 8.41L23 11L14.59 13.59L12 22L9.41 13.59L1 11L9.41 8.41L12 0Z" />
+        </svg>
+      </div>
+
+      {/* Content */}
+      <div className="relative p-5">
+        {/* Star badge header */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+            <span className="text-xs font-bold text-white uppercase tracking-wide">Star Segment</span>
+          </div>
+        </div>
+
+        {/* Main content row */}
+        <div className="flex items-start gap-4">
+          {/* Icon */}
+          <div className="w-14 h-14 rounded-2xl bg-white/25 backdrop-blur-sm flex items-center justify-center shrink-0">
+            <span className="text-white scale-125">{icon}</span>
+          </div>
+
+          {/* Details */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg font-bold text-white">{label}</span>
+              {isRunning && hasStrava && (
+                <span className="text-white/70">
+                  <StravaIcon />
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+              <span>{formatTime(startTime)}</span>
+              <span className="text-white/50">•</span>
+              <span>{formatDuration(durationMinutes)}</span>
+              {location && (
+                <>
+                  <span className="text-white/50">•</span>
+                  <span className="truncate">{location}</span>
+                </>
+              )}
+            </div>
+
+            {/* Running stats */}
+            {isRunning && distanceKm && (
+              <div className="flex items-center gap-4 text-sm text-white/90">
+                <span><span className="text-white/60">Distance</span> {distanceKm.toFixed(2)} km</span>
+                <span><span className="text-white/60">Pace</span> {formatPace(avgPaceMinPerKm)} /km</span>
+              </div>
+            )}
+          </div>
+
+          {/* Score */}
+          <div className="text-right shrink-0">
+            <div className="text-3xl font-bold text-white">{score}%</div>
+            <div className="text-xs text-white/70 font-medium capitalize">{scoreLevel}</div>
+          </div>
+        </div>
+
+        {/* Celebration message */}
+        <div className="mt-4 bg-white/15 backdrop-blur-sm rounded-xl p-3">
+          <div className="flex items-start gap-2">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 text-white shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <p className="text-sm text-white/90 leading-relaxed">{starReason}</p>
+          </div>
+        </div>
+
+        {/* View details CTA for running */}
+        {isRunning && (
+          <div className="mt-4 flex items-center justify-end">
+            <div className="flex items-center gap-1 text-white text-sm font-medium bg-white/20 rounded-full px-3 py-1.5">
+              View details
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function ActivitySegment({
   activityType,
   score,
@@ -219,7 +388,34 @@ export default function ActivitySegment({
   avgPaceMinPerKm,
   hasStrava,
   potentialScore,
+  isStarSegment,
+  starReason,
+  onViewDetail,
+  onViewRouteOptimization,
+  onViewTimeOptimization,
+  segment,
 }) {
+  // Render star segment if applicable
+  if (isStarSegment && starReason) {
+    return (
+      <StarSegmentCard
+        activityType={activityType}
+        score={score}
+        scoreLevel={scoreLevel}
+        durationMinutes={durationMinutes}
+        startTime={startTime}
+        endTime={endTime}
+        location={location}
+        distanceKm={distanceKm}
+        avgPaceMinPerKm={avgPaceMinPerKm}
+        hasStrava={hasStrava}
+        starReason={starReason}
+        onViewDetail={onViewDetail}
+        segment={segment}
+      />
+    )
+  }
+
   const icon = ACTIVITY_ICONS[activityType] || ACTIVITY_ICONS.walking
   const label = ACTIVITY_LABELS[activityType] || 'Activity'
   const colors = ACTIVITY_COLORS[activityType] || ACTIVITY_COLORS.walking
@@ -229,8 +425,17 @@ export default function ActivitySegment({
   const showPotentialScore = potentialScore && potentialScore > score
   const hasPotentialActivities = ['running', 'car', 'walking', 'cycling'].includes(activityType)
 
+  const handleCardClick = () => {
+    if (isRunning && onViewDetail) {
+      onViewDetail(segment)
+    }
+  }
+
   return (
-    <div className={`bg-gradient-to-br ${gradientClasses} rounded-2xl p-4 shadow-sm border border-gray-100/80`}>
+    <div
+      className={`bg-gradient-to-br ${gradientClasses} rounded-3xl p-5 shadow-sm border border-gray-100/50 ${isRunning ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      onClick={handleCardClick}
+    >
       {/* Enhanced timeline bar */}
       <div className="mb-3">
         <TimelineBar startTime={startTime} endTime={endTime} score={score} />
@@ -238,8 +443,8 @@ export default function ActivitySegment({
 
       <div className="flex items-start gap-3">
         {/* Activity icon with type-specific colors */}
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${colors.bg} ${colors.border}`}>
-          <span className={colors.icon}>{icon}</span>
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${colors.bg} ${colors.border}`}>
+          <span className={`${colors.icon} scale-110`}>{icon}</span>
         </div>
 
         {/* Content */}
@@ -247,49 +452,80 @@ export default function ActivitySegment({
           {/* Header row */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-gray-900">{label}</span>
+              <span className="text-base font-semibold text-gray-900">{label}</span>
               {isRunning && hasStrava && (
                 <span className="text-[#FC4C02]" title="Recorded with Strava">
                   <StravaIcon />
                 </span>
               )}
             </div>
-            <ScoreBadge score={score} level={scoreLevel} size="sm" />
+            <div className="flex items-center gap-2">
+              <ScoreBadge score={score} level={scoreLevel} size="sm" />
+              {isRunning && (
+                <svg viewBox="0 0 24 24" className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              )}
+            </div>
           </div>
 
           {/* Time and duration */}
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-gray-500">{formatTime(startTime)}</span>
-            <span className="text-xs text-gray-300">•</span>
-            <span className="text-xs text-gray-500">{formatDuration(durationMinutes)}</span>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-[11px] text-gray-500">{formatTime(startTime)}</span>
+            <span className="text-[11px] text-gray-300">•</span>
+            <span className="text-[11px] text-gray-500">{formatDuration(durationMinutes)}</span>
             {location && (
               <>
-                <span className="text-xs text-gray-300">•</span>
-                <span className="text-xs text-gray-400 truncate">{location}</span>
+                <span className="text-[11px] text-gray-300">•</span>
+                <span className="text-[11px] text-gray-400 truncate">{location}</span>
               </>
             )}
           </div>
 
           {/* Running-specific stats */}
           {isRunning && distanceKm && (
-            <div className="flex items-center gap-3 mt-2 text-xs">
-              <div className="flex items-center gap-1">
-                <span className="text-gray-400">Distance</span>
-                <span className="font-medium text-gray-700">{distanceKm.toFixed(2)} km</span>
+            <div className="flex items-center gap-4 mt-3">
+              <div className="flex flex-col">
+                <span className="text-lg font-bold text-gray-900">{distanceKm.toFixed(2)}</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wide">km</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-gray-400">Pace</span>
-                <span className="font-medium text-gray-700">{formatPace(avgPaceMinPerKm)} /km</span>
+              <div className="flex flex-col">
+                <span className="text-lg font-bold text-gray-900">{formatPace(avgPaceMinPerKm)}</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wide">/km pace</span>
               </div>
             </div>
           )}
 
-          {/* Frosted glass improvement callout */}
-          {hasPotentialActivities && showPotentialScore && (
-            <PotentialScoreCallout
+          {/* View details CTA for running */}
+          {isRunning && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Tap to view details & suggestions</span>
+                <div className="flex items-center gap-1 text-brand text-xs font-medium">
+                  View
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Enhanced improvement CTA - only show for non-running activities */}
+          {hasPotentialActivities && showPotentialScore && !isRunning && (
+            <ImprovementCTA
               current={score}
               potential={potentialScore}
               label={getImprovementLabel(activityType)}
+              activityType={activityType}
+              onPress={() => {
+                // Route-based activities go to route optimization
+                if (activityType === 'walking' || activityType === 'cycling') {
+                  onViewRouteOptimization?.(segment)
+                }
+                // Time-based activities could go to time optimization
+                // Car goes to alternatives (not yet implemented)
+              }}
             />
           )}
         </div>

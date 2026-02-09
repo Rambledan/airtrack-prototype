@@ -1,6 +1,6 @@
 import ScoreBadge from '../shared/AqiScoreBadge'
 
-export default function DailySummary({ summaryDate, summary, averageScore, scoreLevel, totalSegments, outdoorMinutes }) {
+export default function DailySummary({ summaryDate, summary, averageScore, scoreLevel, totalSegments, outdoorMinutes, onViewExposure }) {
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-GB', {
       weekday: 'long',
@@ -10,9 +10,9 @@ export default function DailySummary({ summaryDate, summary, averageScore, score
   }
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100">
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-5 border border-blue-100/60">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
           <svg
             viewBox="0 0 24 24"
             className="w-5 h-5 text-blue-600"
@@ -30,19 +30,30 @@ export default function DailySummary({ summaryDate, summary, averageScore, score
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h4 className="text-sm font-semibold text-blue-800">{formatDate(summaryDate)}</h4>
+            <h4 className="text-base font-semibold text-blue-800">{formatDate(summaryDate)}</h4>
             <ScoreBadge score={averageScore} level={scoreLevel} size="sm" />
           </div>
-          <p className="text-xs text-blue-700 mt-1 leading-relaxed">{summary}</p>
-          <div className="flex items-center gap-4 mt-2">
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-bold text-blue-600">{totalSegments}</span>
-              <span className="text-[10px] text-blue-500">segments</span>
+          <p className="text-[11px] text-blue-600 mt-1.5 leading-relaxed">{summary}</p>
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center gap-5">
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-blue-700">{totalSegments}</span>
+                <span className="text-[10px] text-blue-500 uppercase tracking-wide">segments</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-blue-700">{outdoorMinutes}</span>
+                <span className="text-[10px] text-blue-500 uppercase tracking-wide">min outdoors</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-bold text-blue-600">{outdoorMinutes}m</span>
-              <span className="text-[10px] text-blue-500">outdoors</span>
-            </div>
+            <button
+              onClick={onViewExposure}
+              className="text-xs font-semibold text-blue-700 hover:text-blue-800 flex items-center gap-1"
+            >
+              Full report
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>

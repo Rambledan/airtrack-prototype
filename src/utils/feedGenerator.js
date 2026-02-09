@@ -228,11 +228,42 @@ function generateDaySegments(date, template) {
       segment.distanceKm = runData.distanceKm
       segment.avgPaceMinPerKm = runData.avgPaceMinPerKm
       segment.hasStrava = runData.hasStrava
-      segment.potentialScore = generatePotentialScore(score, 'running')
+      // Only ~30% of runs have optimization suggestions
+      if (Math.random() > 0.7) {
+        segment.potentialScore = generatePotentialScore(score, 'running')
+      } else if (score >= 80 && Math.random() > 0.6) {
+        // High-scoring runs without suggestions can be star segments
+        segment.isStarSegment = true
+        segment.starReason = randomFromArray([
+          'Perfect timing! You ran during the cleanest air window.',
+          'Great choice! This route had 40% less pollution than the main road.',
+          'Optimal conditions! Morning air quality was excellent today.',
+        ])
+      }
     } else if (activity.type === 'car') {
-      segment.potentialScore = generatePotentialScore(score, 'car')
+      // Only ~40% of car trips show alternatives
+      if (Math.random() > 0.6) {
+        segment.potentialScore = generatePotentialScore(score, 'car')
+      }
     } else if (activity.type === 'walking' || activity.type === 'cycling') {
-      segment.potentialScore = generatePotentialScore(score, activity.type)
+      // Only ~25% of walks/cycles have cleaner route suggestions
+      if (Math.random() > 0.75) {
+        segment.potentialScore = generatePotentialScore(score, activity.type)
+      } else if (score >= 75 && Math.random() > 0.65) {
+        // High-scoring walks/cycles without suggestions can be star segments
+        segment.isStarSegment = true
+        segment.starReason = activity.type === 'cycling'
+          ? randomFromArray([
+              'Smart routing! The park path kept you away from traffic pollution.',
+              'Well timed! You beat the morning rush hour congestion.',
+              'Clean commute! This route scored in the top 10% for air quality.',
+            ])
+          : randomFromArray([
+              'Great choice! The canal path had excellent air quality.',
+              'Clean stroll! You avoided the busy high street pollution.',
+              'Perfect timing! Afternoon winds cleared the air beautifully.',
+            ])
+      }
     }
 
     segments.push(segment)

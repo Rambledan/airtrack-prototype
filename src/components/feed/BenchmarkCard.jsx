@@ -1,19 +1,30 @@
 import { getScoreColor } from '../shared/AqiScoreBadge'
 
-export default function BenchmarkCard({ userScore, cityAverage, cityName, percentileBetterThan }) {
+export default function BenchmarkCard({ userScore, cityAverage, cityName, percentileBetterThan, onViewExposure }) {
   const isBetter = userScore > cityAverage
   const maxScore = 100
 
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-      <h4 className="text-sm font-semibold text-gray-700 mb-4">Your score vs {cityName}</h4>
+    <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100/50">
+      <div className="flex items-center justify-between mb-5">
+        <h4 className="text-base font-semibold text-gray-800">Your score vs {cityName}</h4>
+        <button
+          onClick={onViewExposure}
+          className="text-xs font-semibold text-brand hover:text-brand/80 flex items-center gap-1"
+        >
+          View history
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      </div>
 
       {/* Bar comparison */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-500">You</span>
-            <span className="text-xs font-semibold" style={{ color: getScoreColor(userScore) }}>{userScore}%</span>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] text-gray-500">You</span>
+            <span className="text-lg font-bold" style={{ color: getScoreColor(userScore) }}>{userScore}%</span>
           </div>
           <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
             <div
@@ -27,9 +38,9 @@ export default function BenchmarkCard({ userScore, cityAverage, cityName, percen
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-500">{cityName} avg</span>
-            <span className="text-xs font-semibold text-gray-400">{cityAverage}%</span>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] text-gray-500">{cityName} avg</span>
+            <span className="text-lg font-bold text-gray-400">{cityAverage}%</span>
           </div>
           <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
             <div
