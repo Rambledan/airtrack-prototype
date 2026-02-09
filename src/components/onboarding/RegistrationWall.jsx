@@ -69,7 +69,7 @@ export default function RegistrationWall({ isOpen, onClose, onRegister }) {
           {/* Header */}
           <div className="text-center mb-6">
             <img
-              src="/airtrack-logo.svg"
+              src={`${import.meta.env.BASE_URL}airtrack-logo.svg`}
               alt="AirTrack"
               className="h-8 mx-auto mb-4"
             />
