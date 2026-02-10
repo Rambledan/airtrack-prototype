@@ -28,7 +28,7 @@ export default function SplashScreen({ onContinue }) {
         <div className="animate-fade-in-up mb-8">
           <div className="bg-white rounded-2xl px-8 py-5 shadow-xl shadow-black/10">
             <img
-              src="/airtrack-logo.svg"
+              src={`${import.meta.env.BASE_URL}airtrack-logo.svg`}
               alt="AirTrack"
               className="h-10"
             />
