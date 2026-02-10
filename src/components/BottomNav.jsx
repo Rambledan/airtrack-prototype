@@ -1,11 +1,12 @@
 const tabs = [
   {
     id: 'dashboard',
-    label: 'Home',
+    label: 'Clean Routes',
     icon: (
       <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 2a14.5 14.5 0 000 20 14.5 14.5 0 000-20" />
+        <path d="M2 12h20" />
       </svg>
     ),
   },

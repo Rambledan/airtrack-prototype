@@ -10,7 +10,7 @@ const DEFAULT_USER = {
   permissions: {
     location: false,
     notifications: false,
-    tracking: false,
+    tracking: true,
     appleHealth: false,
     strava: false,
   },

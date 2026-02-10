@@ -5,7 +5,14 @@
       "Bash(npx vite build)",
       "Bash(npm run build:*)",
       "Bash(curl:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git remote:*)",
+      "Bash(gh repo sync:*)",
+      "Bash(gh auth:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

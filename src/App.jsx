@@ -197,27 +197,12 @@ function AppContent() {
     }
   }
 
-  // Handle route search from home dashboard
-  const handleRouteSearch = () => {
-    // TODO: Navigate to route search view
-    console.log('Route search clicked')
-  }
-
-  // Handle clean 5K search from home dashboard
-  const handleClean5kSearch = () => {
-    // TODO: Navigate to route search with 5K preset
-    console.log('Clean 5K search clicked')
-  }
-
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return (
           <HomeDashboard
-            onNavigateToExposure={() => setActiveTab('exposure')}
             onNavigateToSettings={() => setActiveTab('profile')}
-            onRouteSearch={handleRouteSearch}
-            onClean5kSearch={handleClean5kSearch}
           />
         )
       case 'feed':
