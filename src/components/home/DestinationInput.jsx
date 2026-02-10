@@ -31,7 +31,7 @@ export default function DestinationInput({ onDestinationChange }) {
             type="text"
             value={destination}
             onChange={handleChange}
-            placeholder="Where to?"
+            placeholder="Where to for a clean route?"
             className="flex-1 text-sm text-gray-900 placeholder-gray-400 bg-transparent outline-none"
           />
 

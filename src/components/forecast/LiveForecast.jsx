@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getScoreLevel } from '../../utils/feedGenerator'
 import { getScoreColor } from '../shared/AqiScoreBadge'
+import DestinationInput from '../home/DestinationInput'
 
 // Mock locations for London
 const LOCATIONS = [
@@ -479,6 +480,9 @@ export default function LiveForecast() {
         isOpen={locationSelectorOpen}
         onToggle={() => setLocationSelectorOpen(!locationSelectorOpen)}
       />
+
+      {/* Destination Input */}
+      <DestinationInput onDestinationChange={() => {}} />
 
       {/* Map View */}
       <MapView
