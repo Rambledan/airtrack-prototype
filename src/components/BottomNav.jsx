@@ -12,7 +12,7 @@ const tabs = [
   },
   {
     id: 'feed',
-    label: 'AirCoach',
+    label: 'Activities',
     icon: (
       <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 11a9 9 0 019 9" />
