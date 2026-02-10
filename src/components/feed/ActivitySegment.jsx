@@ -2,25 +2,6 @@ import ScoreBadge, { getScoreColor } from '../shared/AqiScoreBadge'
 
 // Activity icons (stroke style, colored by activity type)
 const ACTIVITY_ICONS = {
-  car: (
-    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 17a2 2 0 104 0m6 0a2 2 0 104 0M5 17H3v-3.5a.5.5 0 01.5-.5H5l1.5-4.5A2 2 0 018.39 7h7.22a2 2 0 011.89 1.35L19 13h1.5a.5.5 0 01.5.5V17h-2m-4 0H9" />
-    </svg>
-  ),
-  indoor: (
-    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  ),
-  walking: (
-    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="4" r="2" />
-      <path d="M15 22v-5l-3-3 2-4 3 1v4" />
-      <path d="M9 22l2-7-2-2" />
-      <path d="M6 11l4 2" />
-    </svg>
-  ),
   running: (
     <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="13" cy="4" r="2" />
@@ -37,23 +18,16 @@ const ACTIVITY_ICONS = {
       <path d="M12 17.5V14l-3-3 4-3 2 3h3" />
     </svg>
   ),
-  bus: (
+  hiking: (
     <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
-      <path d="M4 11h16" />
-      <path d="M8 18v2M16 18v2" />
-      <circle cx="7.5" cy="14.5" r="1" />
-      <circle cx="16.5" cy="14.5" r="1" />
-    </svg>
-  ),
-  train: (
-    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="3" width="16" height="16" rx="2" />
-      <path d="M4 11h16" />
-      <path d="M12 3v8" />
-      <circle cx="8" cy="15" r="1" />
-      <circle cx="16" cy="15" r="1" />
-      <path d="M8 19l-2 3M16 19l2 3" />
+      <circle cx="12" cy="4" r="2" />
+      <path d="M7 21l3-9" />
+      <path d="M17 21l-3-9" />
+      <path d="M12 6v6" />
+      <path d="M8 12h8" />
+      <path d="M12 21v-3" />
+      <path d="M3 21l4-6" />
+      <path d="M21 21l-4-6" />
     </svg>
   ),
 }
@@ -62,11 +36,7 @@ const ACTIVITY_ICONS = {
 const ACTIVITY_COLORS = {
   running: { bg: 'bg-rose-50', border: 'border-rose-200/50', icon: 'text-rose-500' },
   cycling: { bg: 'bg-sky-50', border: 'border-sky-200/50', icon: 'text-sky-500' },
-  walking: { bg: 'bg-amber-50', border: 'border-amber-200/50', icon: 'text-amber-600' },
-  indoor: { bg: 'bg-slate-50', border: 'border-slate-200/50', icon: 'text-slate-500' },
-  car: { bg: 'bg-zinc-100', border: 'border-zinc-200/50', icon: 'text-zinc-500' },
-  bus: { bg: 'bg-violet-50', border: 'border-violet-200/50', icon: 'text-violet-500' },
-  train: { bg: 'bg-indigo-50', border: 'border-indigo-200/50', icon: 'text-indigo-500' },
+  hiking: { bg: 'bg-emerald-50', border: 'border-emerald-200/50', icon: 'text-emerald-600' },
 }
 
 // Strava icon
@@ -77,13 +47,9 @@ const StravaIcon = () => (
 )
 
 const ACTIVITY_LABELS = {
-  car: 'Driving',
-  indoor: 'Indoors',
-  walking: 'Walking',
   running: 'Running',
   cycling: 'Cycling',
-  bus: 'Bus',
-  train: 'Train',
+  hiking: 'Hiking',
 }
 
 // Score-based gradient tint for card background
@@ -159,9 +125,8 @@ function ImprovementCTA({ current, potential, label, activityType, onPress }) {
   // Activity-specific CTA text
   const ctaText = {
     running: 'See best times',
-    car: 'View alternatives',
-    walking: 'Find cleaner route',
     cycling: 'Optimize route',
+    hiking: 'Find better trail',
   }
 
   return (
@@ -228,11 +193,10 @@ function getImprovementLabel(activityType) {
   switch (activityType) {
     case 'running':
       return 'Better timing available'
-    case 'car':
-      return 'Public transport alternative'
-    case 'walking':
     case 'cycling':
       return 'Cleaner route available'
+    case 'hiking':
+      return 'Better trail available'
     default:
       return 'Improvement available'
   }
@@ -249,24 +213,28 @@ function StarSegmentCard({
   location,
   distanceKm,
   avgPaceMinPerKm,
+  avgSpeedKmh,
+  elevationGain,
   hasStrava,
   starReason,
   onViewDetail,
   segment,
 }) {
-  const icon = ACTIVITY_ICONS[activityType] || ACTIVITY_ICONS.walking
+  const icon = ACTIVITY_ICONS[activityType] || ACTIVITY_ICONS.running
   const label = ACTIVITY_LABELS[activityType] || 'Activity'
   const isRunning = activityType === 'running'
+  const isCycling = activityType === 'cycling'
+  const isHiking = activityType === 'hiking'
 
   const handleCardClick = () => {
-    if (isRunning && onViewDetail) {
+    if (onViewDetail) {
       onViewDetail(segment)
     }
   }
 
   return (
     <div
-      className={`relative overflow-hidden rounded-3xl shadow-lg ${isRunning ? 'cursor-pointer' : ''}`}
+      className="relative overflow-hidden rounded-3xl shadow-lg cursor-pointer"
       onClick={handleCardClick}
     >
       {/* Golden gradient background */}
@@ -314,7 +282,7 @@ function StarSegmentCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-lg font-bold text-white">{label}</span>
-              {isRunning && hasStrava && (
+              {hasStrava && (
                 <span className="text-white/70">
                   <StravaIcon />
                 </span>
@@ -333,11 +301,19 @@ function StarSegmentCard({
               )}
             </div>
 
-            {/* Running stats */}
-            {isRunning && distanceKm && (
+            {/* Activity stats */}
+            {distanceKm && (
               <div className="flex items-center gap-4 text-sm text-white/90">
                 <span><span className="text-white/60">Distance</span> {distanceKm.toFixed(2)} km</span>
-                <span><span className="text-white/60">Pace</span> {formatPace(avgPaceMinPerKm)} /km</span>
+                {(isRunning || isHiking) && avgPaceMinPerKm && (
+                  <span><span className="text-white/60">Pace</span> {formatPace(avgPaceMinPerKm)} /km</span>
+                )}
+                {isCycling && avgSpeedKmh && (
+                  <span><span className="text-white/60">Speed</span> {avgSpeedKmh} km/h</span>
+                )}
+                {isHiking && elevationGain && (
+                  <span><span className="text-white/60">Elev</span> {elevationGain}m</span>
+                )}
               </div>
             )}
           </div>
@@ -386,6 +362,8 @@ export default function ActivitySegment({
   location,
   distanceKm,
   avgPaceMinPerKm,
+  avgSpeedKmh,
+  elevationGain,
   hasStrava,
   potentialScore,
   isStarSegment,
@@ -416,14 +394,16 @@ export default function ActivitySegment({
     )
   }
 
-  const icon = ACTIVITY_ICONS[activityType] || ACTIVITY_ICONS.walking
+  const icon = ACTIVITY_ICONS[activityType] || ACTIVITY_ICONS.running
   const label = ACTIVITY_LABELS[activityType] || 'Activity'
-  const colors = ACTIVITY_COLORS[activityType] || ACTIVITY_COLORS.walking
+  const colors = ACTIVITY_COLORS[activityType] || ACTIVITY_COLORS.running
   const gradientClasses = getScoreGradient(score)
 
   const isRunning = activityType === 'running'
+  const isCycling = activityType === 'cycling'
+  const isHiking = activityType === 'hiking'
   const showPotentialScore = potentialScore && potentialScore > score
-  const hasPotentialActivities = ['running', 'car', 'walking', 'cycling'].includes(activityType)
+  const hasPotentialActivities = ['running', 'cycling', 'hiking'].includes(activityType)
 
   const handleCardClick = () => {
     if (isRunning && onViewDetail) {
@@ -453,7 +433,7 @@ export default function ActivitySegment({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-base font-semibold text-gray-900">{label}</span>
-              {isRunning && hasStrava && (
+              {hasStrava && (
                 <span className="text-[#FC4C02]" title="Recorded with Strava">
                   <StravaIcon />
                 </span>
@@ -461,11 +441,9 @@ export default function ActivitySegment({
             </div>
             <div className="flex items-center gap-2">
               <ScoreBadge score={score} level={scoreLevel} size="sm" />
-              {isRunning && (
-                <svg viewBox="0 0 24 24" className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              )}
+              <svg viewBox="0 0 24 24" className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
             </div>
           </div>
 
@@ -482,49 +460,66 @@ export default function ActivitySegment({
             )}
           </div>
 
-          {/* Running-specific stats */}
-          {isRunning && distanceKm && (
+          {/* Activity-specific stats */}
+          {distanceKm && (
             <div className="flex items-center gap-4 mt-3">
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-gray-900">{distanceKm.toFixed(2)}</span>
                 <span className="text-[10px] text-gray-400 uppercase tracking-wide">km</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-bold text-gray-900">{formatPace(avgPaceMinPerKm)}</span>
-                <span className="text-[10px] text-gray-400 uppercase tracking-wide">/km pace</span>
-              </div>
-            </div>
-          )}
-
-          {/* View details CTA for running */}
-          {isRunning && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Tap to view details & suggestions</span>
-                <div className="flex items-center gap-1 text-brand text-xs font-medium">
-                  View
-                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
+              {isRunning && avgPaceMinPerKm && (
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold text-gray-900">{formatPace(avgPaceMinPerKm)}</span>
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wide">/km pace</span>
                 </div>
-              </div>
+              )}
+              {isCycling && avgSpeedKmh && (
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold text-gray-900">{avgSpeedKmh}</span>
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wide">km/h avg</span>
+                </div>
+              )}
+              {isHiking && avgPaceMinPerKm && (
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold text-gray-900">{formatPace(avgPaceMinPerKm)}</span>
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wide">/km pace</span>
+                </div>
+              )}
+              {isHiking && elevationGain && (
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold text-gray-900">{elevationGain}</span>
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wide">m elev</span>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Enhanced improvement CTA - only show for non-running activities */}
-          {hasPotentialActivities && showPotentialScore && !isRunning && (
+          {/* View details CTA */}
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">Tap to view details & suggestions</span>
+              <div className="flex items-center gap-1 text-brand text-xs font-medium">
+                View
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Improvement CTA */}
+          {hasPotentialActivities && showPotentialScore && (
             <ImprovementCTA
               current={score}
               potential={potentialScore}
               label={getImprovementLabel(activityType)}
               activityType={activityType}
               onPress={() => {
-                // Route-based activities go to route optimization
-                if (activityType === 'walking' || activityType === 'cycling') {
+                if (activityType === 'cycling' || activityType === 'hiking') {
                   onViewRouteOptimization?.(segment)
+                } else if (activityType === 'running') {
+                  onViewTimeOptimization?.(segment)
                 }
-                // Time-based activities could go to time optimization
-                // Car goes to alternatives (not yet implemented)
               }}
             />
           )}
