@@ -3,9 +3,9 @@ import { UserProvider, useUser } from './contexts/UserContext'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
 import LocationPill from './components/LocationPill'
+import HomeDashboard from './components/home/HomeDashboard'
 import ActivityFeed from './components/feed/ActivityFeed'
 import YourExposure from './components/exposure/YourExposure'
-import LiveForecast from './components/forecast/LiveForecast'
 import RunningDetail from './components/feed/RunningDetail'
 import TimeOptimization from './components/optimization/TimeOptimization'
 import RouteOptimizationDetail from './components/optimization/RouteOptimizationDetail'
@@ -38,7 +38,7 @@ function AppContent() {
     resetUser,
   } = useUser()
 
-  const [activeTab, setActiveTab] = useState('home')
+  const [activeTab, setActiveTab] = useState('dashboard')
   const [detailView, setDetailView] = useState(null)
   const [flowState, setFlowState] = useState(FLOW_STATES.NONE)
   const [pendingLockedItem, setPendingLockedItem] = useState(null)
@@ -197,9 +197,30 @@ function AppContent() {
     }
   }
 
+  // Handle route search from home dashboard
+  const handleRouteSearch = () => {
+    // TODO: Navigate to route search view
+    console.log('Route search clicked')
+  }
+
+  // Handle clean 5K search from home dashboard
+  const handleClean5kSearch = () => {
+    // TODO: Navigate to route search with 5K preset
+    console.log('Clean 5K search clicked')
+  }
+
   const renderContent = () => {
     switch (activeTab) {
-      case 'home':
+      case 'dashboard':
+        return (
+          <HomeDashboard
+            onNavigateToExposure={() => setActiveTab('exposure')}
+            onNavigateToSettings={() => setActiveTab('profile')}
+            onRouteSearch={handleRouteSearch}
+            onClean5kSearch={handleClean5kSearch}
+          />
+        )
+      case 'feed':
         return (
           <>
             {/* Location */}
@@ -254,9 +275,6 @@ function AppContent() {
           )
         }
         return <YourExposure />
-      case 'forecast':
-        // Forecast is always available
-        return <LiveForecast />
       case 'profile':
         return (
           <div className="flex flex-col items-center justify-center py-20 text-center">
