@@ -33,29 +33,6 @@ const LEADERBOARD_DATA = [
   { rank: 7, name: 'David R.', score: 71, routeStars: 2.7, timeStars: 2.8, isUser: false },
 ]
 
-// Star history mock data
-const STAR_HISTORY_ACTIVITIES = ['Running', 'Cycling', 'Walking', 'Hiking']
-const STAR_HISTORY_LOCATIONS = ["Regent's Park", 'Thames Path', 'Victoria Park', 'Hampstead Heath', "Regent's Canal", 'Hyde Park']
-
-const generateStarHistory = () => {
-  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
-  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
-  return Array.from({ length: 7 }, (_, i) => {
-    const date = new Date()
-    date.setDate(date.getDate() - Math.floor(i / 2))
-    return {
-      id: i,
-      activity: pick(STAR_HISTORY_ACTIVITIES),
-      location: pick(STAR_HISTORY_LOCATIONS),
-      date,
-      routeRating: rand(2, 5),
-      timeRating: rand(2, 5),
-    }
-  })
-}
-
-const STAR_HISTORY = generateStarHistory()
-
 const AI_SUMMARIES = {
   day: [
     "Good day overall! Your morning commute had elevated PM2.5 levels, but you made up for it with excellent indoor air quality at the office. Consider taking the earlier train tomorrow for a 15% improvement.",
@@ -278,81 +255,6 @@ function CityBenchmark({ userScore, cityAverage = 68 }) {
   )
 }
 
-// Compact inline star cluster for Exposure tab
-function StarMini({ rating, max = 5 }) {
-  return (
-    <div className="flex gap-px">
-      {Array.from({ length: max }).map((_, i) => (
-        <svg
-          key={i}
-          viewBox="0 0 24 24"
-          className={`w-3 h-3 ${i < rating ? 'text-amber-400' : 'text-gray-200'}`}
-          fill="currentColor"
-        >
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-      ))}
-    </div>
-  )
-}
-
-function SegmentStarHistory() {
-  const formatRelativeDate = (date) => {
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    if (date.toDateString() === today.toDateString()) return 'Today'
-    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
-    return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
-  }
-
-  return (
-    <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center">
-          <svg viewBox="0 0 24 24" className="w-4 h-4 text-amber-500" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-        </div>
-        <h3 className="text-base font-semibold text-gray-900">Segment Ratings</h3>
-      </div>
-
-      {/* Column headers */}
-      <div className="flex items-center mb-2 px-1">
-        <span className="flex-1 text-[10px] uppercase tracking-wide text-gray-400 font-medium">Activity</span>
-        <div className="flex gap-5">
-          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-medium w-16 text-center">Route</span>
-          <span className="text-[10px] uppercase tracking-wide text-gray-400 font-medium w-16 text-center">Time</span>
-        </div>
-      </div>
-
-      <div className="space-y-2.5">
-        {STAR_HISTORY.map((item) => (
-          <div key={item.id} className="flex items-center gap-2">
-            {/* Activity info */}
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 truncate">{item.activity}</div>
-              <div className="text-[11px] text-gray-400 truncate">
-                {item.location} · {formatRelativeDate(item.date)}
-              </div>
-            </div>
-
-            {/* Star ratings */}
-            <div className="flex gap-5 shrink-0">
-              <div className="w-16 flex justify-center">
-                <StarMini rating={item.routeRating} />
-              </div>
-              <div className="w-16 flex justify-center">
-                <StarMini rating={item.timeRating} />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function Leaderboard({ onJoinNew }) {
   const [activeGroup, setActiveGroup] = useState('office')
   const [sortBy, setSortBy] = useState('score')
@@ -568,9 +470,6 @@ export default function YourExposure() {
 
       {/* AI Summary */}
       <AISummary range={range} />
-
-      {/* Segment Star History */}
-      <SegmentStarHistory />
 
       {/* City Benchmark */}
       <CityBenchmark userScore={score} />

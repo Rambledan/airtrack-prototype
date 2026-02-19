@@ -11,6 +11,7 @@ import LockedOverlay from '../shared/LockedOverlay'
 export default function FeedItem({
   item,
   onViewRunningDetail,
+  onViewIndoorDetail,
   onNavigateToTab,
   onViewRouteOptimization,
   onViewTimeOptimization,
@@ -60,6 +61,7 @@ export default function FeedItem({
             {...item}
             segment={item}
             onViewDetail={locked ? handleLockedTap : onViewRunningDetail}
+            onViewIndoorDetail={locked ? handleLockedTap : onViewIndoorDetail}
             onViewRouteOptimization={locked ? handleLockedTap : onViewRouteOptimization}
             onViewTimeOptimization={locked ? handleLockedTap : onViewTimeOptimization}
           />

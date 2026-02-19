@@ -7,6 +7,7 @@ import HomeDashboard from './components/home/HomeDashboard'
 import ActivityFeed from './components/feed/ActivityFeed'
 import YourExposure from './components/exposure/YourExposure'
 import RunningDetail from './components/feed/RunningDetail'
+import IndoorDetail from './components/feed/IndoorDetail'
 import TimeOptimization from './components/optimization/TimeOptimization'
 import RouteOptimizationDetail from './components/optimization/RouteOptimizationDetail'
 import SplashScreen from './components/onboarding/SplashScreen'
@@ -90,6 +91,10 @@ function AppContent() {
     setDetailView({ type: 'running', segment })
   }
 
+  const handleViewIndoorDetail = (segment) => {
+    setDetailView({ type: 'indoor', segment })
+  }
+
   const handleBackFromDetail = () => {
     if (detailView?.fromView === 'running') {
       setDetailView({ type: 'running', segment: detailView.segment })
@@ -168,6 +173,20 @@ function AppContent() {
       )
     }
 
+    if (detailView.type === 'indoor') {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <Header />
+          <main className="max-w-lg mx-auto px-4 pt-5 pb-24">
+            <IndoorDetail
+              segment={detailView.segment}
+              onBack={() => setDetailView(null)}
+            />
+          </main>
+        </div>
+      )
+    }
+
     if (detailView.type === 'timeOptimization') {
       return (
         <div className="min-h-screen bg-gray-50">
@@ -236,6 +255,7 @@ function AppContent() {
             {/* Activity Feed */}
             <ActivityFeed
               onViewRunningDetail={handleViewRunningDetail}
+              onViewIndoorDetail={handleViewIndoorDetail}
               onNavigateToTab={setActiveTab}
               onViewRouteOptimization={handleViewRouteOptimization}
               onViewTimeOptimization={handleViewTimeOptimization}

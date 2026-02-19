@@ -4,7 +4,7 @@ import { generateDaysFeed, loadMoreDays } from '../../utils/feedGenerator'
 import FeedItem from './FeedItem'
 import DayDivider from './DayDivider'
 
-export default function ActivityFeed({ initialDays = 3, onViewRunningDetail, onNavigateToTab, onViewRouteOptimization, onViewTimeOptimization, userState, onLockedTap }) {
+export default function ActivityFeed({ initialDays = 3, onViewRunningDetail, onViewIndoorDetail, onNavigateToTab, onViewRouteOptimization, onViewTimeOptimization, userState, onLockedTap }) {
   const [feedState, setFeedState] = useState(() => generateDaysFeed(initialDays))
   const [isLoading, setIsLoading] = useState(false)
 
@@ -34,6 +34,7 @@ export default function ActivityFeed({ initialDays = 3, onViewRunningDetail, onN
         key={item.id}
         item={item}
         onViewRunningDetail={onViewRunningDetail}
+        onViewIndoorDetail={onViewIndoorDetail}
         onNavigateToTab={onNavigateToTab}
         onViewRouteOptimization={onViewRouteOptimization}
         onViewTimeOptimization={onViewTimeOptimization}

@@ -312,23 +312,73 @@ function generateDaySegments(date, template) {
       segment.timeRating = generateTimeRating(startTime, score)
     }
 
+    // Add building data for indoor segments
+    if (activity.type === 'indoor') {
+      const BUILDING_ERAS = [
+        'Pre-1919',
+        'Interwar (1919–1945)',
+        'Post-war (1945–1979)',
+        'Modern (1980–2000)',
+        'Contemporary (post-2000)',
+      ]
+      const CONSTRUCTION_MAP = {
+        Home: 'Victorian terraced brick',
+        Office: 'Steel & glass curtain wall',
+        Café: 'Mixed Victorian conversion',
+        Gym: 'Modern concrete frame',
+        Tate: 'Historic stone masonry',
+      }
+      const locKey = Object.keys(CONSTRUCTION_MAP).find(k =>
+        activity.location.includes(k)
+      ) || 'Home'
+
+      const eraIndex = randomBetween(0, BUILDING_ERAS.length - 1)
+      segment.buildingEra = BUILDING_ERAS[eraIndex]
+      segment.constructionType = CONSTRUCTION_MAP[locKey]
+      // Older eras → higher natural ventilation potential: Pre-1919=5 … Contemporary=1
+      segment.ventilationRating = Math.max(1, 5 - eraIndex)
+    }
+
+    // A segment is a "10 Star Segment" only when both route and time ratings are 5
+    // This means the user picked both the cleanest route AND the optimal time window
+    if (segment.routeRating === 5 && segment.timeRating === 5) {
+      segment.isStarSegment = true
+      const STAR_REASONS = {
+        running: [
+          'Perfect run! You chose the cleanest route at the optimal time of day.',
+          'Flawless timing and routing — you nailed both for maximum clean air.',
+          'Best possible conditions: top-rated route and ideal air quality window.',
+        ],
+        cycling: [
+          'Perfect ride! Cleanest route and optimal time — a full 10 stars.',
+          'You timed it perfectly and took the cleanest path. Outstanding.',
+          'Top-rated route at the best time of day. A genuinely clean commute.',
+        ],
+        walking: [
+          'Perfect walk! Best route and best time of day for clean air.',
+          'You chose the cleanest path at the optimal air quality window.',
+          'Ideal conditions — route and timing both scored a perfect 5 stars.',
+        ],
+        hiking: [
+          'A perfect hike — cleanest trail and optimal conditions today.',
+          'You couldn\'t have chosen better: perfect route and perfect timing.',
+          'Top-rated trail at peak clean-air conditions. A rare achievement.',
+        ],
+      }
+      segment.starReason = randomFromArray(
+        STAR_REASONS[activity.type] || STAR_REASONS.running
+      )
+    }
+
     // Add activity-specific data
     if (activity.type === 'running') {
       const runData = generateRunningData(activity.duration)
       segment.distanceKm = runData.distanceKm
       segment.avgPaceMinPerKm = runData.avgPaceMinPerKm
       segment.hasStrava = runData.hasStrava
-      // Only ~30% of runs have optimization suggestions
-      if (Math.random() > 0.7) {
+      // Only ~30% of runs have optimization suggestions (skip if already a star segment)
+      if (!segment.isStarSegment && Math.random() > 0.7) {
         segment.potentialScore = generatePotentialScore(score, 'running')
-      } else if (score >= 80 && Math.random() > 0.6) {
-        // High-scoring runs without suggestions can be star segments
-        segment.isStarSegment = true
-        segment.starReason = randomFromArray([
-          'Perfect timing! You ran during the cleanest air window.',
-          'Great choice! This route had 40% less pollution than the main road.',
-          'Optimal conditions! Morning air quality was excellent today.',
-        ])
       }
     } else if (activity.type === 'car') {
       // Only ~40% of car trips show alternatives
@@ -336,23 +386,9 @@ function generateDaySegments(date, template) {
         segment.potentialScore = generatePotentialScore(score, 'car')
       }
     } else if (activity.type === 'walking' || activity.type === 'cycling') {
-      // Only ~25% of walks/cycles have cleaner route suggestions
-      if (Math.random() > 0.75) {
+      // Only ~25% of walks/cycles have cleaner route suggestions (skip if already a star segment)
+      if (!segment.isStarSegment && Math.random() > 0.75) {
         segment.potentialScore = generatePotentialScore(score, activity.type)
-      } else if (score >= 75 && Math.random() > 0.65) {
-        // High-scoring walks/cycles without suggestions can be star segments
-        segment.isStarSegment = true
-        segment.starReason = activity.type === 'cycling'
-          ? randomFromArray([
-              'Smart routing! The park path kept you away from traffic pollution.',
-              'Well timed! You beat the morning rush hour congestion.',
-              'Clean commute! This route scored in the top 10% for air quality.',
-            ])
-          : randomFromArray([
-              'Great choice! The canal path had excellent air quality.',
-              'Clean stroll! You avoided the busy high street pollution.',
-              'Perfect timing! Afternoon winds cleared the air beautifully.',
-            ])
       }
     }
 
