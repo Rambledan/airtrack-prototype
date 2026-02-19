@@ -150,6 +150,89 @@ function TimelineBar({ startTime, endTime, score }) {
   )
 }
 
+// Inline route map using custom SVG — consistent with RouteOptimizationDetail approach
+function RouteMap({ routePoints, score, dark = false }) {
+  if (!routePoints || routePoints.length < 2) return null
+
+  const mapWidth = 320
+  const mapHeight = 120
+  const padding = 16
+
+  const minLat = Math.min(...routePoints.map(p => p.lat)) - 0.001
+  const maxLat = Math.max(...routePoints.map(p => p.lat)) + 0.001
+  const minLng = Math.min(...routePoints.map(p => p.lng)) - 0.002
+  const maxLng = Math.max(...routePoints.map(p => p.lng)) + 0.002
+
+  const scaleX = (mapWidth - 2 * padding) / (maxLng - minLng)
+  const scaleY = (mapHeight - 2 * padding) / (maxLat - minLat)
+
+  const toXY = (point) => ({
+    x: padding + (point.lng - minLng) * scaleX,
+    y: mapHeight - padding - (point.lat - minLat) * scaleY,
+  })
+
+  const pathD = routePoints.map((p, i) => {
+    const { x, y } = toXY(p)
+    return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
+  }).join(' ')
+
+  const start = toXY(routePoints[0])
+  const end = toXY(routePoints[routePoints.length - 1])
+  const color = getScoreColor(score)
+
+  const bgClass = dark ? 'from-white/10 to-white/5' : 'from-slate-100 to-slate-200'
+  const gridOpacity = dark ? 0.08 : 0.2
+
+  return (
+    <div className={`relative rounded-2xl overflow-hidden mb-3`} style={{ height: '120px' }}>
+      <div className={`absolute inset-0 bg-gradient-to-br ${bgClass}`}>
+        {/* Street grid pattern */}
+        <svg className="absolute inset-0 w-full h-full" style={{ opacity: gridOpacity }}>
+          <defs>
+            <pattern id={`grid-${score}`} width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke={dark ? '#ffffff' : '#94a3b8'} strokeWidth="0.5" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#grid-${score})`} />
+        </svg>
+      </div>
+
+      {/* Route SVG */}
+      <svg
+        viewBox={`0 0 ${mapWidth} ${mapHeight}`}
+        className="absolute inset-0 w-full h-full"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {/* Glow layer */}
+        <path
+          d={pathD}
+          fill="none"
+          stroke={color}
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.25"
+        />
+        {/* Main route line */}
+        <path
+          d={pathD}
+          fill="none"
+          stroke={color}
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Start dot */}
+        <circle cx={start.x} cy={start.y} r="5" fill={dark ? 'rgba(255,255,255,0.9)' : '#1e293b'} />
+        <circle cx={start.x} cy={start.y} r="3" fill={color} />
+        {/* End dot */}
+        <circle cx={end.x} cy={end.y} r="5" fill={dark ? 'rgba(255,255,255,0.9)' : '#1e293b'} />
+        <circle cx={end.x} cy={end.y} r="3" fill={color} />
+      </svg>
+    </div>
+  )
+}
+
 // Enhanced improvement CTA for activities with optimization suggestions
 function ImprovementCTA({ current, potential, label, activityType, onPress }) {
   if (!potential || potential <= current) return null
@@ -238,7 +321,54 @@ function getImprovementLabel(activityType) {
   }
 }
 
-// Star Segment celebration component
+// Individual star rating cluster (filled/empty stars)
+function StarRating({ rating, max = 5, white = false }) {
+  return (
+    <div className="flex gap-0.5">
+      {Array.from({ length: max }).map((_, i) => (
+        <svg
+          key={i}
+          viewBox="0 0 24 24"
+          className={`w-3.5 h-3.5 ${
+            i < rating
+              ? white ? 'text-white' : 'text-amber-400'
+              : white ? 'text-white/25' : 'text-gray-200'
+          }`}
+          fill="currentColor"
+        >
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ))}
+    </div>
+  )
+}
+
+// Two-column star rating row with tap-to-view-optimisation links
+function StarRatingRow({ routeRating, timeRating, onViewRoute, onViewTime, white = false }) {
+  const labelClass = white
+    ? 'text-[10px] uppercase tracking-wide text-white/60 font-medium'
+    : 'text-[10px] uppercase tracking-wide text-gray-400 font-medium'
+  const dividerClass = white ? 'bg-white/20' : 'bg-gray-100'
+
+  const handleRoute = (e) => { e.stopPropagation(); onViewRoute?.() }
+  const handleTime = (e) => { e.stopPropagation(); onViewTime?.() }
+
+  return (
+    <div className={`flex items-center gap-4 mt-3 pt-3 border-t ${white ? 'border-white/15' : 'border-gray-100/70'}`}>
+      <button onClick={handleRoute} className="flex-1 flex flex-col gap-1 text-left">
+        <span className={labelClass}>Route</span>
+        <StarRating rating={routeRating} white={white} />
+      </button>
+      <div className={`w-px h-7 ${dividerClass}`} />
+      <button onClick={handleTime} className="flex-1 flex flex-col gap-1 text-left">
+        <span className={labelClass}>Time</span>
+        <StarRating rating={timeRating} white={white} />
+      </button>
+    </div>
+  )
+}
+
+// Star Segment celebration component — combined card with map + coaching
 function StarSegmentCard({
   activityType,
   score,
@@ -251,7 +381,13 @@ function StarSegmentCard({
   avgPaceMinPerKm,
   hasStrava,
   starReason,
+  routePoints,
+  coachingText,
+  routeRating,
+  timeRating,
   onViewDetail,
+  onViewRouteOptimization,
+  onViewTimeOptimization,
   segment,
 }) {
   const icon = ACTIVITY_ICONS[activityType] || ACTIVITY_ICONS.walking
@@ -302,6 +438,11 @@ function StarSegmentCard({
             <span className="text-xs font-bold text-white uppercase tracking-wide">Star Segment</span>
           </div>
         </div>
+
+        {/* Route map */}
+        {routePoints && (
+          <RouteMap routePoints={routePoints} score={score} dark />
+        )}
 
         {/* Main content row */}
         <div className="flex items-start gap-4">
@@ -360,6 +501,24 @@ function StarSegmentCard({
           </div>
         </div>
 
+        {/* Coaching text */}
+        {coachingText && (
+          <div className="mt-3 bg-white/10 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-xs text-white/80 italic leading-relaxed">{coachingText}</p>
+          </div>
+        )}
+
+        {/* Star ratings */}
+        {(routeRating || timeRating) && (
+          <StarRatingRow
+            routeRating={routeRating}
+            timeRating={timeRating}
+            white
+            onViewRoute={() => onViewRouteOptimization?.(segment)}
+            onViewTime={() => onViewTimeOptimization?.(segment)}
+          />
+        )}
+
         {/* View details CTA for running */}
         {isRunning && (
           <div className="mt-4 flex items-center justify-end">
@@ -376,6 +535,8 @@ function StarSegmentCard({
   )
 }
 
+const OUTDOOR_ACTIVITIES = ['running', 'cycling', 'hiking', 'walking']
+
 export default function ActivitySegment({
   activityType,
   score,
@@ -386,16 +547,22 @@ export default function ActivitySegment({
   location,
   distanceKm,
   avgPaceMinPerKm,
+  avgSpeedKmh,
+  elevationGain,
   hasStrava,
   potentialScore,
   isStarSegment,
   starReason,
+  routePoints,
+  coachingText,
+  routeRating,
+  timeRating,
   onViewDetail,
   onViewRouteOptimization,
   onViewTimeOptimization,
   segment,
 }) {
-  // Render star segment if applicable
+  // Render star segment if applicable — now includes map + coaching + ratings
   if (isStarSegment && starReason) {
     return (
       <StarSegmentCard
@@ -410,7 +577,13 @@ export default function ActivitySegment({
         avgPaceMinPerKm={avgPaceMinPerKm}
         hasStrava={hasStrava}
         starReason={starReason}
+        routePoints={routePoints}
+        coachingText={coachingText}
+        routeRating={routeRating}
+        timeRating={timeRating}
         onViewDetail={onViewDetail}
+        onViewRouteOptimization={onViewRouteOptimization}
+        onViewTimeOptimization={onViewTimeOptimization}
         segment={segment}
       />
     )
@@ -422,6 +595,7 @@ export default function ActivitySegment({
   const gradientClasses = getScoreGradient(score)
 
   const isRunning = activityType === 'running'
+  const isOutdoor = OUTDOOR_ACTIVITIES.includes(activityType)
   const showPotentialScore = potentialScore && potentialScore > score
   const hasPotentialActivities = ['running', 'car', 'walking', 'cycling'].includes(activityType)
 
@@ -436,10 +610,15 @@ export default function ActivitySegment({
       className={`bg-gradient-to-br ${gradientClasses} rounded-3xl p-5 shadow-sm border border-gray-100/50 ${isRunning ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
       onClick={handleCardClick}
     >
-      {/* Enhanced timeline bar */}
+      {/* Timeline bar */}
       <div className="mb-3">
         <TimelineBar startTime={startTime} endTime={endTime} score={score} />
       </div>
+
+      {/* Route map for outdoor activities */}
+      {isOutdoor && routePoints && (
+        <RouteMap routePoints={routePoints} score={score} />
+      )}
 
       <div className="flex items-start gap-3">
         {/* Activity icon with type-specific colors */}
@@ -453,7 +632,7 @@ export default function ActivitySegment({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-base font-semibold text-gray-900">{label}</span>
-              {isRunning && hasStrava && (
+              {hasStrava && (
                 <span className="text-[#FC4C02]" title="Recorded with Strava">
                   <StravaIcon />
                 </span>
@@ -482,7 +661,7 @@ export default function ActivitySegment({
             )}
           </div>
 
-          {/* Running-specific stats */}
+          {/* Activity stats */}
           {isRunning && distanceKm && (
             <div className="flex items-center gap-4 mt-3">
               <div className="flex flex-col">
@@ -495,23 +674,51 @@ export default function ActivitySegment({
               </div>
             </div>
           )}
-
-          {/* View details CTA for running */}
-          {isRunning && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Tap to view details & suggestions</span>
-                <div className="flex items-center gap-1 text-brand text-xs font-medium">
-                  View
-                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </div>
+          {activityType === 'cycling' && distanceKm && (
+            <div className="flex items-center gap-4 mt-3">
+              <div className="flex flex-col">
+                <span className="text-lg font-bold text-gray-900">{distanceKm.toFixed(2)}</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wide">km</span>
               </div>
+              {avgSpeedKmh && (
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold text-gray-900">{avgSpeedKmh}</span>
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wide">km/h avg</span>
+                </div>
+              )}
+            </div>
+          )}
+          {activityType === 'hiking' && distanceKm && (
+            <div className="flex items-center gap-4 mt-3">
+              <div className="flex flex-col">
+                <span className="text-lg font-bold text-gray-900">{distanceKm.toFixed(2)}</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wide">km</span>
+              </div>
+              {elevationGain && (
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold text-gray-900">{elevationGain}m</span>
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wide">elevation</span>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Enhanced improvement CTA - only show for non-running activities */}
+          {/* Coaching text for outdoor activities */}
+          {isOutdoor && coachingText && (
+            <p className="text-xs text-gray-500 italic mt-3 leading-relaxed">{coachingText}</p>
+          )}
+
+          {/* Star ratings for outdoor activities */}
+          {isOutdoor && (routeRating || timeRating) && (
+            <StarRatingRow
+              routeRating={routeRating}
+              timeRating={timeRating}
+              onViewRoute={() => onViewRouteOptimization?.(segment)}
+              onViewTime={() => onViewTimeOptimization?.(segment)}
+            />
+          )}
+
+          {/* Improvement CTA - non-running outdoor activities */}
           {hasPotentialActivities && showPotentialScore && !isRunning && (
             <ImprovementCTA
               current={score}
@@ -519,12 +726,9 @@ export default function ActivitySegment({
               label={getImprovementLabel(activityType)}
               activityType={activityType}
               onPress={() => {
-                // Route-based activities go to route optimization
                 if (activityType === 'walking' || activityType === 'cycling') {
                   onViewRouteOptimization?.(segment)
                 }
-                // Time-based activities could go to time optimization
-                // Car goes to alternatives (not yet implemented)
               }}
             />
           )}

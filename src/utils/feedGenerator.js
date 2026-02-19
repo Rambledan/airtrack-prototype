@@ -5,6 +5,39 @@ const LOCATIONS = {
   areas: ['Shoreditch', 'Hackney', 'Victoria Park', 'Regent\'s Park', 'South Bank', 'King\'s Cross', 'Angel'],
 }
 
+// London area coordinate anchors for route generation
+const LOCATION_COORDS = {
+  'Islington':       { lat: 51.5362, lng: -0.1033 },
+  'Canary Wharf':    { lat: 51.5054, lng: -0.0235 },
+  'Regent\'s Park':  { lat: 51.5313, lng: -0.1570 },
+  'Regent\'s Canal': { lat: 51.5369, lng: -0.0870 },
+  'Victoria Park':   { lat: 51.5364, lng: -0.0334 },
+  'Richmond Park':   { lat: 51.4408, lng: -0.2664 },
+  'Thames Path':     { lat: 51.4890, lng: -0.1290 },
+  'Hampstead Heath': { lat: 51.5718, lng: -0.1621 },
+  'Hyde Park':       { lat: 51.5073, lng: -0.1657 },
+  'South Bank':      { lat: 51.5055, lng: -0.1132 },
+  'Shoreditch':      { lat: 51.5248, lng: -0.0798 },
+  'Hackney':         { lat: 51.5450, lng: -0.0553 },
+  'Angel':           { lat: 51.5322, lng: -0.1058 },
+  'Camden':          { lat: 51.5392, lng: -0.1426 },
+  'default':         { lat: 51.5100, lng: -0.1278 },
+}
+
+const COACHING_BETTER_TIME = [
+  'Air quality peaks at 7am in this area. Going 30 minutes earlier could improve your score by around 12 points.',
+  'Early morning has the cleanest air on this route. A 6:30am start would boost your score by up to 10 points.',
+  'Peak hour traffic raises PM2.5 here significantly. Try the same route before 8am for a much cleaner experience.',
+  'Wind patterns favour this route in the morning. Starting before 7:30am typically adds 8–14 points to your score.',
+]
+
+const COACHING_BETTER_ROUTE = [
+  'The canal path 200m north had 18% cleaner air yesterday. A small detour would significantly boost your score.',
+  'The park route via the east gate avoids the main road. It adds 4 minutes but cuts pollution exposure by 22%.',
+  'Cutting through the residential streets here reduces traffic pollution. This alternative typically scores 15 points higher.',
+  'The river path runs parallel to your route with far cleaner air. It\'s the same distance with a noticeably better score.',
+]
+
 const ROUTES = [
   { from: 'Islington', to: 'Canary Wharf', via: 'Jubilee Line' },
   { from: 'Canary Wharf', to: 'Victoria Park', via: 'Limehouse Cut' },
@@ -146,6 +179,53 @@ function getScoreLevel(score) {
   return 'hazardous'
 }
 
+// Generate synthetic route waypoints for outdoor activity segments
+function generateRouteWaypoints(location, durationMinutes) {
+  const anchor = LOCATION_COORDS[location] || LOCATION_COORDS['default']
+  // Scale route spread loosely with duration
+  const spread = Math.min(0.012, 0.003 + durationMinutes * 0.00015)
+
+  const points = [{ lat: anchor.lat, lng: anchor.lng }]
+  const numMid = randomBetween(3, 5)
+  let curLat = anchor.lat
+  let curLng = anchor.lng
+
+  for (let i = 0; i < numMid; i++) {
+    curLat += (Math.random() - 0.45) * spread
+    curLng += (Math.random() - 0.35) * spread
+    points.push({ lat: curLat, lng: curLng })
+  }
+
+  // End point close to start (loop/out-and-back feel)
+  points.push({
+    lat: anchor.lat + (Math.random() - 0.5) * spread * 0.4,
+    lng: anchor.lng + (Math.random() - 0.5) * spread * 0.4,
+  })
+
+  return points
+}
+
+// Route star rating: how close was this route to the cleanest available? (1–5)
+function generateRouteRating(score) {
+  if (score >= 85) return 5
+  if (score >= 75) return 4
+  if (score >= 60) return 3
+  if (score >= 45) return 2
+  return 1
+}
+
+// Time star rating: how close was the activity time to the cleanest window? (1–5)
+function generateTimeRating(startTime, score) {
+  const hour = new Date(startTime).getHours()
+  const isOptimalTime = (hour >= 6 && hour <= 8) || (hour >= 20 && hour <= 22)
+  const isOkTime = (hour >= 9 && hour <= 11) || (hour >= 17 && hour <= 19)
+  if (isOptimalTime && score >= 70) return 5
+  if (isOptimalTime || score >= 75) return 4
+  if (isOkTime) return 3
+  if (hour >= 12 && hour <= 16) return 2
+  return 1
+}
+
 // Get realistic AQI based on activity type and time of day
 function getRealisticAqi(activityType, hour) {
   let baseAqi = 30
@@ -222,6 +302,16 @@ function generateDaySegments(date, template) {
       timestamp: endTime,
     }
 
+    // Add route, coaching, and star ratings for all outdoor activities
+    if (['running', 'cycling', 'hiking', 'walking'].includes(activity.type)) {
+      segment.routePoints = generateRouteWaypoints(activity.location, activity.duration)
+      segment.coachingText = Math.random() > 0.5
+        ? randomFromArray(COACHING_BETTER_TIME)
+        : randomFromArray(COACHING_BETTER_ROUTE)
+      segment.routeRating = generateRouteRating(score)
+      segment.timeRating = generateTimeRating(startTime, score)
+    }
+
     // Add activity-specific data
     if (activity.type === 'running') {
       const runData = generateRunningData(activity.duration)
@@ -273,14 +363,27 @@ function generateDaySegments(date, template) {
 }
 
 // Generate insight items for a specific day
-function generateDayInsights(date, dayIndex) {
+function generateDayInsights(date, dayIndex, daySegments = []) {
   const insights = []
   const isToday = dayIndex === 0
 
   if (dayIndex > 0) {
     const summaryTime = new Date(date)
-    summaryTime.setHours(22, 0, 0, 0)
-    const avgScore = randomBetween(55, 85)
+    // Set to 00:00:01 to ensure daily summary appears at END of each day's items
+    // (feed sorts descending by timestamp, so earliest timestamp = bottom)
+    summaryTime.setHours(0, 0, 0, 1)
+
+    // Calculate actual average score from segments
+    const avgScore = daySegments.length > 0
+      ? Math.round(daySegments.reduce((sum, s) => sum + s.score, 0) / daySegments.length)
+      : randomBetween(55, 85)
+
+    // Calculate actual outdoor minutes from segments
+    const outdoorActivities = ['walking', 'running', 'cycling', 'hiking']
+    const outdoorMins = daySegments
+      .filter(s => outdoorActivities.includes(s.activityType))
+      .reduce((sum, s) => sum + s.durationMinutes, 0)
+
     insights.push({
       id: generateId(),
       type: 'daily-summary',
@@ -289,8 +392,16 @@ function generateDayInsights(date, dayIndex) {
       summary: randomFromArray(DAILY_SUMMARIES),
       averageScore: avgScore,
       scoreLevel: getScoreLevel(avgScore),
-      totalSegments: randomBetween(8, 14),
-      outdoorMinutes: randomBetween(45, 150),
+      totalSegments: daySegments.length || randomBetween(8, 14),
+      outdoorMinutes: outdoorMins || randomBetween(45, 150),
+      // Include segment data for DayScoreRing visualization
+      segments: daySegments.map(s => ({
+        durationMinutes: s.durationMinutes,
+        score: s.score,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        activityType: s.activityType
+      }))
     })
   }
 
@@ -422,7 +533,7 @@ export function generateDaysFeed(numDays, startDate = new Date()) {
     dayStart.setHours(0, 0, 0, 0)
 
     const segments = generateDaySegments(dayStart, template)
-    const insights = generateDayInsights(dayStart, dayIndex)
+    const insights = generateDayInsights(dayStart, dayIndex, segments)
 
     let dayItems = mergeFeedItems(segments, insights)
     if (dayIndex === 0) {
@@ -453,6 +564,16 @@ export function loadMoreDays(beforeDate, numDays = 2) {
   const startDate = new Date(beforeDate)
   startDate.setDate(startDate.getDate() - 1)
   return generateDaysFeed(numDays, startDate)
+}
+
+export function generateUserStarStats() {
+  return {
+    totalRouteStars: randomBetween(28, 72),
+    totalTimeStars: randomBetween(22, 68),
+    totalSegments: randomBetween(18, 45),
+    avgRouteRating: randomBetween(28, 45) / 10,
+    avgTimeRating: randomBetween(25, 42) / 10,
+  }
 }
 
 export { getScoreLevel, aqiToScore }

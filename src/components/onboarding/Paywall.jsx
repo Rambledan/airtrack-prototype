@@ -2,6 +2,21 @@ import { useState } from 'react'
 
 const PLANS = [
   {
+    id: 'pro',
+    name: 'Pro',
+    price: '£199',
+    period: ' + £10.99/month',
+    description: 'Complete air quality monitoring solution',
+    features: [
+      'Indoor Air Quality Monitor included',
+      '24-hour air monitoring',
+      'Works indoors & outdoors',
+      'All Premium features',
+      'Priority support',
+    ],
+    recommended: true,
+  },
+  {
     id: 'premium',
     name: 'Premium',
     price: '£10.99',
@@ -14,7 +29,7 @@ const PLANS = [
       'Detailed exposure analytics',
       'Priority support',
     ],
-    recommended: true,
+    recommended: false,
   },
   {
     id: 'trial',
@@ -156,13 +171,18 @@ export default function Paywall({ isOpen, onSelectPlan, userName = '' }) {
             ) : (
               <>
                 <ApplePayIcon />
-                {selectedPlan === 'trial' ? 'Start Free Trial' : 'Subscribe with Apple'}
+                {selectedPlan === 'trial' ? 'Start Free Trial' : selectedPlan === 'pro' ? 'Purchase Pro' : 'Subscribe with Apple'}
               </>
             )}
           </button>
           {selectedPlan === 'trial' && (
             <p className="text-xs text-gray-400 text-center mt-2">
               You'll be charged £10.99/month after your trial ends. Cancel anytime.
+            </p>
+          )}
+          {selectedPlan === 'pro' && (
+            <p className="text-xs text-gray-400 text-center mt-2">
+              One-time device payment of £199 plus £10.99/month subscription. Free shipping included.
             </p>
           )}
         </div>
