@@ -233,58 +233,33 @@ function RouteMap({ routePoints, score, dark = false }) {
   )
 }
 
-// Building facade placeholder for indoor activity cards
-function BuildingFacade({ location }) {
-  const loc = (location || '').toLowerCase()
-  const isHome   = loc.includes('home')
-  const isOffice = loc.includes('office') || loc.includes('canary')
-  const isCafe   = loc.includes('café') || loc.includes('cafe')
-  const isGym    = loc.includes('gym')
-  const isMuseum = loc.includes('tate') || loc.includes('museum')
+// Interior photo filenames in public/
+const INTERIOR_PHOTOS = [
+  'Interior1.png',
+  'interior2.png',
+  'interior3.png',
+  'interior4.png',
+  'interior5.png',
+]
 
-  const palette = isHome   ? { sky: '#bfdbfe', wall: '#dbeafe', accent: '#3b82f6', door: '#1d4ed8' }
-               : isOffice  ? { sky: '#e0f2fe', wall: '#94a3b8', accent: '#0ea5e9', door: '#0284c7' }
-               : isCafe    ? { sky: '#fef3c7', wall: '#d6b896', accent: '#f59e0b', door: '#b45309' }
-               : isGym     ? { sky: '#dcfce7', wall: '#6ee7b7', accent: '#10b981', door: '#047857' }
-               : isMuseum  ? { sky: '#f3e8ff', wall: '#c4b5fd', accent: '#8b5cf6', door: '#6d28d9' }
-               :             { sky: '#f1f5f9', wall: '#cbd5e1', accent: '#64748b', door: '#334155' }
+// Stable photo selection — same segment always gets the same photo
+function photoForSegment(segmentId) {
+  if (!segmentId) return INTERIOR_PHOTOS[0]
+  const idx = segmentId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % INTERIOR_PHOTOS.length
+  return INTERIOR_PHOTOS[idx]
+}
 
+// Real interior photo for indoor activity cards
+function BuildingFacade({ location, segmentId }) {
+  const src = `${import.meta.env.BASE_URL}${photoForSegment(segmentId)}`
   return (
     <div className="relative rounded-2xl overflow-hidden mb-3" style={{ height: '100px' }}>
-      <svg
-        viewBox="0 0 320 100"
-        className="w-full h-full"
-        preserveAspectRatio="xMidYMid slice"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Sky */}
-        <rect width="320" height="100" fill={palette.sky} />
-        {/* Ground strip */}
-        <rect y="82" width="320" height="18" fill={palette.wall} opacity="0.5" />
-        {/* Main building */}
-        <rect x="55" y="18" width="210" height="68" rx="3" fill={palette.wall} />
-        {/* Roof line accent */}
-        <rect x="55" y="18" width="210" height="5" rx="2" fill={palette.accent} opacity="0.5" />
-        {/* Windows — 2 rows × 5 cols */}
-        {[0, 1].map(row =>
-          [0, 1, 2, 3, 4].map(col => (
-            <rect
-              key={`w-${row}-${col}`}
-              x={75 + col * 38}
-              y={30 + row * 20}
-              width="24"
-              height="13"
-              rx="2"
-              fill={palette.accent}
-              opacity={row === 0 && col % 2 === 0 ? 0.8 : 0.4}
-            />
-          ))
-        )}
-        {/* Door */}
-        <rect x="143" y="57" width="34" height="29" rx="3" fill={palette.door} opacity="0.7" />
-        {/* Door handle */}
-        <circle cx="170" cy="73" r="2" fill="white" opacity="0.8" />
-      </svg>
+      <img
+        src={src}
+        alt={location || 'Indoor location'}
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
     </div>
   )
 }
@@ -669,7 +644,7 @@ export default function ActivitySegment({
 
       {/* Building facade for indoor activities */}
       {isIndoor && (
-        <BuildingFacade location={location} score={score} />
+        <BuildingFacade location={location} segmentId={segment?.id} />
       )}
 
       <div className="flex items-start gap-3">

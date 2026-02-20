@@ -26,64 +26,37 @@ function formatDuration(minutes) {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
 }
 
-// Building facade — larger version for detail view (~180px tall)
-function BuildingFacadeLarge({ location }) {
-  const loc = (location || '').toLowerCase()
-  const isHome   = loc.includes('home')
-  const isOffice = loc.includes('office') || loc.includes('canary')
-  const isCafe   = loc.includes('café') || loc.includes('cafe')
-  const isGym    = loc.includes('gym')
-  const isMuseum = loc.includes('tate') || loc.includes('museum')
+// Interior photo filenames in public/
+const INTERIOR_PHOTOS = [
+  'Interior1.png',
+  'interior2.png',
+  'interior3.png',
+  'interior4.png',
+  'interior5.png',
+]
 
-  const palette = isHome   ? { sky: '#bfdbfe', wall: '#dbeafe', accent: '#3b82f6', door: '#1d4ed8' }
-               : isOffice  ? { sky: '#e0f2fe', wall: '#94a3b8', accent: '#0ea5e9', door: '#0284c7' }
-               : isCafe    ? { sky: '#fef3c7', wall: '#d6b896', accent: '#f59e0b', door: '#b45309' }
-               : isGym     ? { sky: '#dcfce7', wall: '#6ee7b7', accent: '#10b981', door: '#047857' }
-               : isMuseum  ? { sky: '#f3e8ff', wall: '#c4b5fd', accent: '#8b5cf6', door: '#6d28d9' }
-               :             { sky: '#f1f5f9', wall: '#cbd5e1', accent: '#64748b', door: '#334155' }
+function photoForSegment(segmentId) {
+  if (!segmentId) return INTERIOR_PHOTOS[0]
+  const idx = segmentId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % INTERIOR_PHOTOS.length
+  return INTERIOR_PHOTOS[idx]
+}
+
+// Real interior photo — larger version for detail view (~180px tall)
+function BuildingFacadeLarge({ location, segmentId }) {
+  const src = `${import.meta.env.BASE_URL}${photoForSegment(segmentId)}`
 
   return (
     <div className="relative rounded-3xl overflow-hidden" style={{ height: '180px' }}>
-      <svg
-        viewBox="0 0 400 180"
-        className="w-full h-full"
-        preserveAspectRatio="xMidYMid slice"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Sky */}
-        <rect width="400" height="180" fill={palette.sky} />
-        {/* Ground strip */}
-        <rect y="155" width="400" height="25" fill={palette.wall} opacity="0.5" />
-        {/* Main building */}
-        <rect x="50" y="30" width="300" height="130" rx="4" fill={palette.wall} />
-        {/* Roof accent */}
-        <rect x="50" y="30" width="300" height="8" rx="3" fill={palette.accent} opacity="0.55" />
-        {/* Windows — 3 rows × 5 cols */}
-        {[0, 1, 2].map(row =>
-          [0, 1, 2, 3, 4].map(col => (
-            <rect
-              key={`w-${row}-${col}`}
-              x={75 + col * 52}
-              y={48 + row * 28}
-              width="34"
-              height="18"
-              rx="3"
-              fill={palette.accent}
-              opacity={row === 0 && col % 2 === 0 ? 0.85 : row === 1 ? 0.5 : 0.35}
-            />
-          ))
-        )}
-        {/* Door */}
-        <rect x="172" y="112" width="56" height="48" rx="4" fill={palette.door} opacity="0.75" />
-        {/* Door window */}
-        <rect x="183" y="118" width="34" height="16" rx="3" fill="white" opacity="0.4" />
-        {/* Door handle */}
-        <circle cx="220" cy="139" r="3" fill="white" opacity="0.7" />
-      </svg>
-
+      <img
+        src={src}
+        alt={location || 'Indoor location'}
+        className="w-full h-full object-cover"
+      />
+      {/* Dark gradient so location label is readable */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
       {/* Location label overlay */}
       <div className="absolute bottom-3 left-4 right-4">
-        <span className="text-xs font-semibold text-white/90 bg-black/30 backdrop-blur-sm rounded-lg px-2.5 py-1">
+        <span className="text-xs font-semibold text-white drop-shadow">
           {location}
         </span>
       </div>
@@ -299,7 +272,7 @@ export default function IndoorDetail({ segment, onBack }) {
       </div>
 
       {/* Building facade */}
-      <BuildingFacadeLarge location={segment.location} />
+      <BuildingFacadeLarge location={segment.location} segmentId={segment.id} />
 
       {/* Ventilation Rating */}
       <VentilationCard segment={segment} />
