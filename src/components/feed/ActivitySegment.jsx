@@ -352,48 +352,82 @@ function getImprovementLabel(activityType) {
   }
 }
 
-// Individual star rating cluster (filled/empty stars)
-function StarRating({ rating, max = 5, white = false }) {
+// Star segment banner — shown when no route or time improvement is available
+function NearPerfectBanner({ reason }) {
   return (
-    <div className="flex gap-0.5">
-      {Array.from({ length: max }).map((_, i) => (
-        <svg
-          key={i}
-          viewBox="0 0 24 24"
-          className={`w-3.5 h-3.5 ${
-            i < rating
-              ? white ? 'text-white' : 'text-amber-400'
-              : white ? 'text-white/25' : 'text-gray-200'
-          }`}
-          fill="currentColor"
-        >
+    <div className="mt-3">
+      {/* Divider with inline star label */}
+      <div className="flex items-center gap-2 mb-2.5">
+        <div className="h-px flex-1 bg-amber-100" />
+        <div className="flex items-center gap-1">
+          <svg viewBox="0 0 24 24" className="w-3 h-3 text-amber-500" fill="currentColor">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-amber-500">Star Segment</span>
+        </div>
+        <div className="h-px flex-1 bg-amber-100" />
+      </div>
+      {/* Celebration message */}
+      <div className="flex items-start gap-2 bg-amber-50 rounded-xl px-3 py-2.5">
+        <svg viewBox="0 0 24 24" className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="currentColor">
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
-      ))}
+        <p className="text-xs text-amber-800 leading-relaxed">{reason}</p>
+      </div>
     </div>
   )
 }
 
-// Two-column star rating row with tap-to-view-optimisation links
-function StarRatingRow({ routeRating, timeRating, onViewRoute, onViewTime, white = false }) {
-  const labelClass = white
-    ? 'text-[10px] uppercase tracking-wide text-white/60 font-medium'
-    : 'text-[10px] uppercase tracking-wide text-gray-400 font-medium'
-  const dividerClass = white ? 'bg-white/20' : 'bg-gray-100'
+// AirCoach section: divider label + coaching text + suggestion buttons
+function AirCoachSection({ coachingText, children }) {
+  return (
+    <div className="mt-3">
+      <div className="flex items-center gap-2 mb-2.5">
+        <div className="h-px flex-1 bg-gray-100" />
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">AirCoach</span>
+        <div className="h-px flex-1 bg-gray-100" />
+      </div>
+      {coachingText && (
+        <p className="text-xs text-gray-500 italic mb-2.5 leading-relaxed">{coachingText}</p>
+      )}
+      {children}
+    </div>
+  )
+}
 
+// Two-button row linking to optimised route and optimised time detail views
+function OptimisationRow({ onViewRoute, onViewTime, routeRating = 3, timeRating = 3, white = false }) {
   const handleRoute = (e) => { e.stopPropagation(); onViewRoute?.() }
-  const handleTime = (e) => { e.stopPropagation(); onViewTime?.() }
+  const handleTime  = (e) => { e.stopPropagation(); onViewTime?.() }
+
+  const routePct = Math.round(8 + (5 - routeRating) * 3)
+  const timePct  = Math.round(6 + (5 - timeRating) * 4)
+
+  const btnBase  = 'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold transition-colors'
+  const routeBtn = white
+    ? `${btnBase} bg-white/20 text-white hover:bg-white/30`
+    : `${btnBase} bg-emerald-50 text-emerald-700 border border-emerald-200/60 hover:bg-emerald-100`
+  const timeBtn  = white
+    ? `${btnBase} bg-white/20 text-white hover:bg-white/30`
+    : `${btnBase} bg-sky-50 text-sky-700 border border-sky-200/60 hover:bg-sky-100`
+  const divider = white ? 'bg-white/20' : 'bg-gray-100'
 
   return (
-    <div className={`flex items-center gap-4 mt-3 pt-3 border-t ${white ? 'border-white/15' : 'border-gray-100/70'}`}>
-      <button onClick={handleRoute} className="flex-1 flex flex-col gap-1 text-left">
-        <span className={labelClass}>Route</span>
-        <StarRating rating={routeRating} white={white} />
+    <div className="flex items-center gap-2">
+      <button onClick={handleRoute} className={routeBtn}>
+        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+          <circle cx="12" cy="10" r="3" />
+        </svg>
+        Try {routePct}% cleaner route
       </button>
-      <div className={`w-px h-7 ${dividerClass}`} />
-      <button onClick={handleTime} className="flex-1 flex flex-col gap-1 text-left">
-        <span className={labelClass}>Time</span>
-        <StarRating rating={timeRating} white={white} />
+      <div className={`w-px h-6 shrink-0 ${divider}`} />
+      <button onClick={handleTime} className={timeBtn}>
+        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        Try {timePct}% cleaner time
       </button>
     </div>
   )
@@ -523,15 +557,17 @@ function StarSegmentCard({
           </div>
         </div>
 
-        {/* 10-star ratings — Route 5★ + Time 5★ */}
+        {/* Optimisation buttons */}
         {(routeRating || timeRating) && (
-          <StarRatingRow
-            routeRating={routeRating}
-            timeRating={timeRating}
-            white
-            onViewRoute={() => onViewRouteOptimization?.(segment)}
-            onViewTime={() => onViewTimeOptimization?.(segment)}
-          />
+          <div className="mt-3 pt-3 border-t border-white/15">
+            <OptimisationRow
+              white
+              routeRating={routeRating}
+              timeRating={timeRating}
+              onViewRoute={() => onViewRouteOptimization?.(segment)}
+              onViewTime={() => onViewTimeOptimization?.(segment)}
+            />
+          </div>
         )}
 
         {/* View details CTA for running */}
@@ -572,6 +608,8 @@ export default function ActivitySegment({
   coachingText,
   routeRating,
   timeRating,
+  isNearPerfect,
+  nearPerfectReason,
   buildingEra,
   constructionType,
   ventilationRating,
@@ -730,34 +768,21 @@ export default function ActivitySegment({
             </div>
           )}
 
-          {/* Coaching text for outdoor activities */}
-          {isOutdoor && coachingText && (
-            <p className="text-xs text-gray-500 italic mt-3 leading-relaxed">{coachingText}</p>
-          )}
-
-          {/* Star ratings for outdoor activities */}
+          {/* AirCoach section — coaching insight + optimisation suggestions */}
           {isOutdoor && (routeRating || timeRating) && (
-            <StarRatingRow
-              routeRating={routeRating}
-              timeRating={timeRating}
-              onViewRoute={() => onViewRouteOptimization?.(segment)}
-              onViewTime={() => onViewTimeOptimization?.(segment)}
-            />
+            <AirCoachSection coachingText={coachingText}>
+              <OptimisationRow
+                routeRating={routeRating}
+                timeRating={timeRating}
+                onViewRoute={() => onViewRouteOptimization?.(segment)}
+                onViewTime={() => onViewTimeOptimization?.(segment)}
+              />
+            </AirCoachSection>
           )}
 
-          {/* Improvement CTA - non-running outdoor activities */}
-          {hasPotentialActivities && showPotentialScore && !isRunning && (
-            <ImprovementCTA
-              current={score}
-              potential={potentialScore}
-              label={getImprovementLabel(activityType)}
-              activityType={activityType}
-              onPress={() => {
-                if (activityType === 'walking' || activityType === 'cycling') {
-                  onViewRouteOptimization?.(segment)
-                }
-              }}
-            />
+          {/* Star segment — no improvement available, celebrate the user */}
+          {isOutdoor && isNearPerfect && (
+            <NearPerfectBanner reason={nearPerfectReason} />
           )}
         </div>
       </div>

@@ -38,6 +38,25 @@ const COACHING_BETTER_ROUTE = [
   'The river path runs parallel to your route with far cleaner air. It\'s the same distance with a noticeably better score.',
 ]
 
+// Celebration messages for near-perfect segments — no cleaner route or time was available
+const NEAR_PERFECT_REASONS = {
+  running: [
+    'You picked the optimal route at the cleanest time of day. Nothing left to improve.',
+    'Peak conditions, perfect execution. There\'s no better run to have done today.',
+    'Excellent choice — no cleaner route or time was available. You nailed it.',
+  ],
+  cycling: [
+    'Best possible ride — the cleanest route at the ideal time. Nothing to optimise.',
+    'You couldn\'t have chosen better: optimal path and timing. A genuinely clean commute.',
+    'No cleaner route or time existed for this ride. Outstanding.',
+  ],
+  walking: [
+    'You chose the cleanest path at the best time of day. Nothing to improve here.',
+    'Optimal route and timing. This walk couldn\'t have been cleaner.',
+    'Perfect walk — no cleaner route or time was available. Great instincts.',
+  ],
+}
+
 const ROUTES = [
   { from: 'Islington', to: 'Canary Wharf', via: 'Jubilee Line' },
   { from: 'Canary Wharf', to: 'Victoria Park', via: 'Limehouse Cut' },
@@ -305,11 +324,19 @@ function generateDaySegments(date, template) {
     // Add route, coaching, and star ratings for all outdoor activities
     if (['running', 'cycling', 'hiking', 'walking'].includes(activity.type)) {
       segment.routePoints = generateRouteWaypoints(activity.location, activity.duration)
-      segment.coachingText = Math.random() > 0.5
-        ? randomFromArray(COACHING_BETTER_TIME)
-        : randomFromArray(COACHING_BETTER_ROUTE)
-      segment.routeRating = generateRouteRating(score)
-      segment.timeRating = generateTimeRating(startTime, score)
+
+      // ~20% of running/cycling/walking segments are near-perfect — nothing to improve
+      const canBeNearPerfect = ['running', 'cycling', 'walking'].includes(activity.type)
+      if (canBeNearPerfect && Math.random() < 0.20) {
+        segment.isNearPerfect = true
+        segment.nearPerfectReason = randomFromArray(NEAR_PERFECT_REASONS[activity.type])
+      } else {
+        segment.coachingText = Math.random() > 0.5
+          ? randomFromArray(COACHING_BETTER_TIME)
+          : randomFromArray(COACHING_BETTER_ROUTE)
+        segment.routeRating = generateRouteRating(score)
+        segment.timeRating = generateTimeRating(startTime, score)
+      }
     }
 
     // Add building data for indoor segments

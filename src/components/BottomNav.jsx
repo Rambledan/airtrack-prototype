@@ -22,6 +22,16 @@ const tabs = [
     ),
   },
   {
+    id: 'record',
+    label: 'Record',
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
     id: 'exposure',
     label: 'Exposure',
     icon: (

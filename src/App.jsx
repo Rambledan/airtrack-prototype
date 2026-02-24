@@ -6,6 +6,7 @@ import LocationPill from './components/LocationPill'
 import HomeDashboard from './components/home/HomeDashboard'
 import ActivityFeed from './components/feed/ActivityFeed'
 import YourExposure from './components/exposure/YourExposure'
+import RecordActivity from './components/record/RecordActivity'
 import RunningDetail from './components/feed/RunningDetail'
 import IndoorDetail from './components/feed/IndoorDetail'
 import TimeOptimization from './components/optimization/TimeOptimization'
@@ -151,6 +152,7 @@ function AppContent() {
           <Paywall
             isOpen={flowState === FLOW_STATES.PAYWALL}
             onSelectPlan={handlePaywallSelect}
+            onClose={() => setFlowState(FLOW_STATES.NONE)}
             userName={user.profile?.name}
           />
         </div>
@@ -222,6 +224,16 @@ function AppContent() {
         return (
           <HomeDashboard
             onNavigateToSettings={() => setActiveTab('profile')}
+            onShowRegistration={() => setFlowState(FLOW_STATES.REGISTRATION)}
+            onUpgradeClick={() => {
+              if (!user.state || user.state === 'guest') {
+                setFlowState(FLOW_STATES.REGISTRATION)
+              } else if (user.state === 'registered_free') {
+                setFlowState(FLOW_STATES.PAYWALL)
+              } else {
+                setActiveTab('profile')
+              }
+            }}
           />
         )
       case 'feed':
@@ -264,6 +276,22 @@ function AppContent() {
             />
           </>
         )
+      case 'record':
+        // Record is available to registered users (free + premium); locked for anonymous/guest
+        if (!user.state || user.state === 'guest') {
+          return (
+            <div className="relative">
+              <LockedOverlay
+                isLocked={true}
+                onTap={() => setFlowState(FLOW_STATES.REGISTRATION)}
+                showLockIcon={true}
+              >
+                <RecordActivity locked />
+              </LockedOverlay>
+            </div>
+          )
+        }
+        return <RecordActivity />
       case 'exposure':
         // Exposure is locked for non-premium users
         if (!isPremium) {
@@ -359,6 +387,7 @@ function AppContent() {
       <Paywall
         isOpen={flowState === FLOW_STATES.PAYWALL}
         onSelectPlan={handlePaywallSelect}
+        onClose={() => setFlowState(FLOW_STATES.NONE)}
         userName={user.profile?.name}
       />
     </div>
