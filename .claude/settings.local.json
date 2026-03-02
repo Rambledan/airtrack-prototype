@@ -12,7 +12,24 @@
       "Bash(git remote:*)",
       "Bash(gh repo sync:*)",
       "Bash(gh auth:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype status)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype log --oneline -5)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype diff HEAD --stat)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype log --oneline -10)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype branch -a)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype log exp/Activity-recording --oneline -10)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype diff main exp/Activity-recording --stat)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype show 52bc656 --stat)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype push origin main)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype remote -v)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype push airaware main)",
+      "Bash(ssh-add:*)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype config --get credential.helper)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype remote set-url:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(lsof:*)",
+      "Bash(git -C /Users/danielharris/airtrack-prototype diff --stat HEAD)"
     ]
   }
 }

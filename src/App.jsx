@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { UserProvider, useUser } from './contexts/UserContext'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
-import LocationPill from './components/LocationPill'
-import HomeDashboard from './components/home/HomeDashboard'
+import WelcomeCard from './components/home/WelcomeCard'
+import LiveForecast from './components/forecast/LiveForecast'
 import ActivityFeed from './components/feed/ActivityFeed'
 import YourExposure from './components/exposure/YourExposure'
 import RecordActivity from './components/record/RecordActivity'
@@ -40,7 +40,7 @@ function AppContent() {
     resetUser,
   } = useUser()
 
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab, setActiveTab] = useState('feed')
   const [detailView, setDetailView] = useState(null)
   const [flowState, setFlowState] = useState(FLOW_STATES.NONE)
   const [pendingLockedItem, setPendingLockedItem] = useState(null)
@@ -220,30 +220,17 @@ function AppContent() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return (
-          <HomeDashboard
-            onNavigateToSettings={() => setActiveTab('profile')}
-            onShowRegistration={() => setFlowState(FLOW_STATES.REGISTRATION)}
-            onUpgradeClick={() => {
-              if (!user.state || user.state === 'guest') {
-                setFlowState(FLOW_STATES.REGISTRATION)
-              } else if (user.state === 'registered_free') {
-                setFlowState(FLOW_STATES.PAYWALL)
-              } else {
-                setActiveTab('profile')
-              }
-            }}
-          />
-        )
-      case 'feed':
+      case 'feed': {
+        const isAnonymous = !user.state || user.state === 'guest'
         return (
           <>
-            {/* Location */}
-            <div className="flex items-center justify-between mb-5">
-              <LocationPill />
-              <span className="text-xs text-gray-400">Updated 2 min ago</span>
-            </div>
+            {/* Welcome card — anonymous users only, dismissable */}
+            {isAnonymous && (
+              <WelcomeCard onSignUp={() => setFlowState(FLOW_STATES.REGISTRATION)} />
+            )}
+
+            {/* Forecast header: live map, 24h timeline, today's insights */}
+            <LiveForecast />
 
             {/* Example data banner for non-premium users */}
             {!isPremium && (
@@ -276,6 +263,7 @@ function AppContent() {
             />
           </>
         )
+      }
       case 'record':
         // Record is available to registered users (free + premium); locked for anonymous/guest
         if (!user.state || user.state === 'guest') {
