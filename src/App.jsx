@@ -262,7 +262,10 @@ function AppContent() {
             )}
 
             {/* Forecast header: live map, 24h timeline, today's insights */}
-            <LiveForecast />
+            <LiveForecast
+              isPremium={isPremium}
+              onUpgrade={() => setFlowState(FLOW_STATES.PAYWALL)}
+            />
 
             {/* Personalisation question cards — registered users only, after 48h, unanswered/undismissed */}
             {(user.state === 'registered_free' || user.state === 'registered_premium') && (
