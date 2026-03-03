@@ -1,34 +1,51 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { getScoreColor } from '../shared/AqiScoreBadge'
 import { getScoreLevel } from '../../utils/feedGenerator'
 
-// Generate hourly forecast data from 6am to 11pm
-function generateHourlyForecast() {
-  const hours = []
-  for (let hour = 6; hour <= 23; hour++) {
-    // Simulate realistic AQ patterns
-    let baseScore = 70
-    if ((hour >= 7 && hour <= 9) || (hour >= 17 && hour <= 19)) {
-      baseScore = 50 // Rush hours - worse
-    } else if (hour >= 10 && hour <= 16) {
-      baseScore = 65 // Midday
-    } else if (hour >= 20) {
-      baseScore = 80 // Evening - better
-    } else if (hour === 6) {
-      baseScore = 88 // Early morning - best
-    }
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-    const score = Math.min(100, Math.max(25, baseScore + Math.floor(Math.random() * 15) - 7))
-    hours.push({
-      hour,
-      score,
-      level: getScoreLevel(score),
-    })
-  }
-  return hours
+// Deterministic pseudo-random — ensures past-day bars are stable across renders
+const seededRandom = (n) => {
+  const x = Math.sin(n + 1) * 10000
+  return x - Math.floor(x)
 }
 
-// Mock route coordinates
+// Day label: handles -2 to +2
+const getDayLabel = (offset) => {
+  if (offset === 0) return 'Today'
+  if (offset === 1) return 'Tomorrow'
+  if (offset === -1) return 'Yesterday'
+  const d = new Date()
+  d.setDate(d.getDate() + offset)
+  return d.toLocaleDateString('en-GB', { weekday: 'long' }) // e.g. "Monday", "Thursday"
+}
+
+// Generate 24 data points (hours 0–23) for any day offset
+const generateDayForecast = (dayOffset) => {
+  const d = new Date()
+  d.setDate(d.getDate() + dayOffset)
+  const dateSeed = d.getDate() * 31 + d.getMonth() * 366
+
+  return Array.from({ length: 24 }, (_, hour) => {
+    let baseScore = 70
+    if ((hour >= 7 && hour <= 9) || (hour >= 17 && hour <= 19)) {
+      baseScore = 55 // Rush hours
+    } else if (hour >= 10 && hour <= 16) {
+      baseScore = 65 // Midday
+    } else if (hour >= 22 || hour <= 5) {
+      baseScore = 85 // Night / early morning
+    } else if (hour === 6) {
+      baseScore = 88 // Pre-rush sweet spot
+    }
+
+    const rand = seededRandom(dateSeed + hour * 7) * 15 - 7
+    const score = Math.min(100, Math.max(25, Math.round(baseScore + rand)))
+    return { hour, score, level: getScoreLevel(score) }
+  })
+}
+
+// ── Route Map (unchanged) ────────────────────────────────────────────────────
+
 const generateRoutePoints = () => {
   const points = []
   const centerLat = 51.5362
@@ -122,86 +139,116 @@ function RouteMap({ location }) {
   )
 }
 
-function TimeSlot({ hour, score, isSelected, isBest, onClick }) {
-  const color = getScoreColor(score)
-  const formatHour = (h) => `${h.toString().padStart(2, '0')}:00`
+// ── DayTimeline ──────────────────────────────────────────────────────────────
+// A single 24-bar row matching the Forecast Timeline bar pattern
+
+function DayTimeline({ offset, label, data, currentHour, selection, onSelectBar }) {
+  const isPast = offset < 0
+  const isToday = offset === 0
 
   return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center p-2 rounded-xl transition-all ${
-        isSelected ? 'ring-2 ring-brand ring-offset-2' : ''
-      } ${isBest ? 'bg-green-50' : 'bg-gray-50'}`}
-    >
-      <div
-        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-1"
-        style={{ backgroundColor: color }}
-      >
-        {score}
+    <div>
+      {/* Day label */}
+      <p className={`text-xs font-semibold mb-1.5 ${
+        isToday ? 'text-brand' : isPast ? 'text-gray-400' : 'text-gray-600'
+      }`}>
+        {label}
+      </p>
+
+      {/* Bar chart — same pattern as Forecast Timeline: flex gap-0.5 h-10 items-end */}
+      <div className="flex gap-0.5 h-10 items-end">
+        {data.map((d, i) => {
+          const isPastHour = isToday && i < currentHour
+          const isSelected = selection?.dayOffset === offset && selection?.hourIndex === i
+          return (
+            <button
+              key={i}
+              onClick={() => onSelectBar(offset, i, d.score)}
+              className={`flex-1 rounded-t transition-all ${
+                isSelected ? 'ring-2 ring-brand ring-offset-1' : ''
+              }`}
+              style={{
+                height: `${Math.max(15, (d.score / 100) * 100)}%`,
+                backgroundColor: getScoreColor(d.score),
+                opacity: isPastHour ? 0.3 : isPast ? 0.55 : 0.85,
+              }}
+            />
+          )
+        })}
       </div>
-      <span className={`text-xs font-medium ${isBest ? 'text-green-700' : 'text-gray-600'}`}>
-        {formatHour(hour)}
-      </span>
-      {isBest && (
-        <span className="text-[10px] text-green-600 font-semibold mt-0.5">BEST</span>
+
+      {/* Time labels */}
+      <div className="flex justify-between mt-1">
+        <span className="text-[10px] text-gray-400">00:00</span>
+        <span className="text-[10px] text-gray-400">06:00</span>
+        <span className="text-[10px] text-gray-400">12:00</span>
+        <span className="text-[10px] text-gray-400">18:00</span>
+        <span className="text-[10px] text-gray-400">23:00</span>
+      </div>
+
+      {/* "Now" indicator pinned under the current hour bar */}
+      {isToday && (
+        <div
+          className="text-[9px] text-brand font-semibold mt-0.5"
+          style={{
+            marginLeft: `calc(${(currentHour / 24) * 100}% - 8px)`,
+            width: 'fit-content',
+          }}
+        >
+          ▲ Now
+        </div>
       )}
-    </button>
+    </div>
   )
 }
 
-function TimeHeatmap({ hourlyData, selectedHour, onSelectHour, bestHour }) {
+// ── TimeMap ───────────────────────────────────────────────────────────────────
+// Container: 5 stacked DayTimeline rows inside one card
+
+function TimeMap({ allDaysData, currentHour, selection, onSelectBar }) {
   return (
     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">Best Time to Run</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-4">5-Day Air Quality</h3>
 
-      {/* Time grid */}
-      <div className="grid grid-cols-6 gap-2 mb-4">
-        {hourlyData.slice(0, 12).map((data) => (
-          <TimeSlot
-            key={data.hour}
-            hour={data.hour}
-            score={data.score}
-            isSelected={selectedHour === data.hour}
-            isBest={bestHour === data.hour}
-            onClick={() => onSelectHour(data.hour)}
-          />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-6 gap-2">
-        {hourlyData.slice(12).map((data) => (
-          <TimeSlot
-            key={data.hour}
-            hour={data.hour}
-            score={data.score}
-            isSelected={selectedHour === data.hour}
-            isBest={bestHour === data.hour}
-            onClick={() => onSelectHour(data.hour)}
-          />
+      <div className="space-y-1">
+        {allDaysData.map(({ offset, label, data }, idx) => (
+          <div key={offset}>
+            {idx > 0 && <div className="border-t border-gray-100 my-3" />}
+            <DayTimeline
+              offset={offset}
+              label={label}
+              data={data}
+              currentHour={currentHour}
+              selection={selection}
+              onSelectBar={onSelectBar}
+            />
+          </div>
         ))}
       </div>
 
       {/* Legend */}
-      <div className="mt-4 pt-3 border-t border-gray-100">
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-2">
-            <div className="flex gap-0.5">
-              {['#ef4444', '#f97316', '#eab308', '#10b981', '#22c55e'].map((color, i) => (
-                <div key={i} className="w-4 h-2 rounded-sm" style={{ backgroundColor: color }} />
-              ))}
-            </div>
-            <span>Poor → Excellent</span>
+      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-0.5">
+            {['#ef4444', '#f97316', '#eab308', '#10b981', '#22c55e'].map((c, i) => (
+              <div key={i} className="w-4 h-2 rounded-sm" style={{ backgroundColor: c }} />
+            ))}
           </div>
-          <span>Tap to compare</span>
+          <span className="text-xs text-gray-400">Poor → Excellent</span>
         </div>
+        <span className="text-xs text-gray-400">Tap to compare</span>
       </div>
     </div>
   )
 }
 
-function ComparisonCard({ currentHour, currentScore, bestHour, bestScore }) {
-  const improvement = bestScore - currentScore
-  const formatHour = (h) => `${h.toString().padStart(2, '0')}:00`
+// ── ComparisonCard ────────────────────────────────────────────────────────────
+
+function ComparisonCard({ selection, bestFutureSlot }) {
+  const improvement = bestFutureSlot.score - selection.score
+  const selDayLabel = getDayLabel(selection.dayOffset)
+  const selHourStr = `${String(selection.hourIndex).padStart(2, '0')}:00`
+  const bestHourStr = `${String(bestFutureSlot.hourIndex).padStart(2, '0')}:00`
 
   return (
     <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg">
@@ -213,20 +260,24 @@ function ComparisonCard({ currentHour, currentScore, bestHour, bestScore }) {
         </div>
         <div>
           <div className="text-white/80 text-xs">Potential improvement</div>
-          <div className="text-xl font-bold">+{improvement} points</div>
+          <div className="text-xl font-bold">
+            {improvement > 0 ? `+${improvement}` : improvement} points
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-white/10 rounded-xl p-3">
-          <div className="text-white/70 text-xs mb-1">Your time</div>
-          <div className="text-lg font-bold">{formatHour(currentHour)}</div>
-          <div className="text-sm text-white/80">{currentScore}% AQ</div>
+          <div className="text-white/70 text-xs mb-1">Selected</div>
+          <div className="text-base font-bold leading-tight">{selHourStr}</div>
+          <div className="text-xs text-white/70 mt-0.5">{selDayLabel}</div>
+          <div className="text-sm text-white/80 mt-1">{selection.score}% AQ</div>
         </div>
         <div className="bg-white/20 rounded-xl p-3 border border-white/30">
-          <div className="text-white/70 text-xs mb-1">Best time</div>
-          <div className="text-lg font-bold">{formatHour(bestHour)}</div>
-          <div className="text-sm text-green-200">{bestScore}% AQ</div>
+          <div className="text-white/70 text-xs mb-1">Best window</div>
+          <div className="text-base font-bold leading-tight">{bestHourStr}</div>
+          <div className="text-xs text-white/70 mt-0.5">{bestFutureSlot.label}</div>
+          <div className="text-sm text-green-200 mt-1">{bestFutureSlot.score}% AQ</div>
         </div>
       </div>
 
@@ -235,14 +286,17 @@ function ComparisonCard({ currentHour, currentScore, bestHour, bestScore }) {
           <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 01-3.46 0" />
         </svg>
-        Set reminder for {formatHour(bestHour)}
+        Set reminder — {bestFutureSlot.label} at {bestHourStr}
       </button>
     </div>
   )
 }
 
-function InsightCard({ bestHour }) {
-  const formatHour = (h) => `${h.toString().padStart(2, '0')}:00`
+// ── InsightCard ───────────────────────────────────────────────────────────────
+
+function InsightCard({ bestFutureSlot }) {
+  const bestHourStr = `${String(bestFutureSlot.hourIndex).padStart(2, '0')}:00`
+  const title = `Why ${bestFutureSlot.label} at ${bestHourStr} is best`
 
   return (
     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
@@ -254,10 +308,12 @@ function InsightCard({ bestHour }) {
           </svg>
         </div>
         <div>
-          <div className="text-sm font-medium text-blue-900 mb-1">Why {formatHour(bestHour)} is best</div>
+          <div className="text-sm font-medium text-blue-900 mb-1">{title}</div>
           <p className="text-xs text-blue-700 leading-relaxed">
-            Early morning has the lowest traffic emissions and overnight dispersion of pollutants.
-            Air quality typically degrades during rush hours (7-9am, 5-7pm) due to vehicle traffic.
+            Early morning and late evening hours have the lowest traffic emissions and benefit from
+            overnight pollutant dispersion. Air quality typically degrades during rush hours
+            (7–9am, 5–7pm) due to vehicle traffic. Planning around these peaks can significantly
+            improve your exposure.
           </p>
         </div>
       </div>
@@ -265,22 +321,48 @@ function InsightCard({ bestHour }) {
   )
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function TimeOptimization({ segment, onBack }) {
-  const [hourlyData] = useState(() => generateHourlyForecast())
+  const currentHour = new Date().getHours()
 
-  // Find best hour
-  const bestHourData = hourlyData.reduce((best, curr) =>
-    curr.score > best.score ? curr : best
-  , hourlyData[0])
+  // Generate 5-day data once at mount (seeded = stable across re-renders)
+  const [allDaysData] = useState(() =>
+    [-2, -1, 0, 1, 2].map(offset => ({
+      offset,
+      label: getDayLabel(offset),
+      data: generateDayForecast(offset),
+    }))
+  )
 
-  // Current hour from segment or default
-  const currentHour = segment?.startTime
-    ? new Date(segment.startTime).getHours()
-    : 19
+  // Default selection to segment's usual hour on Today
+  const yourHour = segment?.startTime ? new Date(segment.startTime).getHours() : 19
+  const todayEntry = allDaysData.find(d => d.offset === 0)
+  const [selection, setSelection] = useState({
+    dayOffset: 0,
+    hourIndex: yourHour,
+    score: todayEntry.data[yourHour].score,
+  })
 
-  const [selectedHour, setSelectedHour] = useState(currentHour)
-  const selectedData = hourlyData.find(h => h.hour === selectedHour) || hourlyData[0]
-  const currentData = hourlyData.find(h => h.hour === currentHour) || hourlyData[0]
+  const handleSelectBar = (dayOffset, hourIndex, score) => {
+    setSelection({ dayOffset, hourIndex, score })
+  }
+
+  // Best upcoming slot: today (from current hour onwards) + tomorrow + day+2 (full)
+  const bestFutureSlot = useMemo(() => {
+    let best = { dayOffset: 0, hourIndex: currentHour, score: 0, label: 'Today' }
+    allDaysData
+      .filter(d => d.offset >= 0)
+      .forEach(({ offset, label, data }) => {
+        const start = offset === 0 ? currentHour : 0
+        data.slice(start).forEach((d, i) => {
+          if (d.score > best.score) {
+            best = { dayOffset: offset, hourIndex: start + i, score: d.score, label }
+          }
+        })
+      })
+    return best
+  }, [allDaysData, currentHour])
 
   return (
     <div className="space-y-4">
@@ -303,24 +385,22 @@ export default function TimeOptimization({ segment, onBack }) {
       {/* Route Map */}
       <RouteMap location={segment?.location || "Regent's Canal"} />
 
-      {/* Time Heatmap */}
-      <TimeHeatmap
-        hourlyData={hourlyData}
-        selectedHour={selectedHour}
-        onSelectHour={setSelectedHour}
-        bestHour={bestHourData.hour}
+      {/* 5-Day Time Map */}
+      <TimeMap
+        allDaysData={allDaysData}
+        currentHour={currentHour}
+        selection={selection}
+        onSelectBar={handleSelectBar}
       />
 
       {/* Comparison */}
       <ComparisonCard
-        currentHour={currentHour}
-        currentScore={currentData.score}
-        bestHour={bestHourData.hour}
-        bestScore={bestHourData.score}
+        selection={selection}
+        bestFutureSlot={bestFutureSlot}
       />
 
       {/* Insight */}
-      <InsightCard bestHour={bestHourData.hour} />
+      <InsightCard bestFutureSlot={bestFutureSlot} />
     </div>
   )
 }
