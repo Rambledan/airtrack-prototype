@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { UserProvider, useUser } from './contexts/UserContext'
+import { DevSimProvider, useDevSim } from './contexts/DevSimContext'
+import { NotificationProvider } from './contexts/NotificationContext'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
 import WelcomeCard from './components/home/WelcomeCard'
@@ -15,8 +17,17 @@ import SplashScreen from './components/onboarding/SplashScreen'
 import RegistrationWall from './components/onboarding/RegistrationWall'
 import Paywall from './components/onboarding/Paywall'
 import OnboardingSteps from './components/onboarding/OnboardingSteps'
+import PersonalisationOnboarding from './components/onboarding/PersonalisationOnboarding'
 import { LockedRunningDetailPreview } from './components/shared/LockedDetailPreview'
 import LockedOverlay from './components/shared/LockedOverlay'
+import DevLauncher from './components/devpanel/DevLauncher'
+import DevPanel from './components/devpanel/DevPanel'
+import NotificationToast from './components/notifications/NotificationToast'
+import NotificationBanner from './components/notifications/NotificationBanner'
+import PersonalisationCards from './components/personalisation/PersonalisationCards'
+import PersonalisationSettings from './components/personalisation/PersonalisationSettings'
+
+const DEV_MODE = true
 
 // Flow states for the auth/onboarding journey
 const FLOW_STATES = {
@@ -38,12 +49,36 @@ function AppContent() {
     updatePermission,
     completeOnboarding,
     resetUser,
+    savePersonalisation,
+    dismissPersonalisationQuestion,
+    restorePersonalisationQuestion,
   } = useUser()
+
+  // Dev simulation flow state override (for onboarding stage jumps)
+  const devSim = DEV_MODE ? useDevSim() : null
+  const flowOverride = devSim?.flowStateOverride
 
   const [activeTab, setActiveTab] = useState('feed')
   const [detailView, setDetailView] = useState(null)
-  const [flowState, setFlowState] = useState(FLOW_STATES.NONE)
+  const [flowState, _setFlowState] = useState(FLOW_STATES.NONE)
   const [pendingLockedItem, setPendingLockedItem] = useState(null)
+  const [showPersonalisationOnboarding, setShowPersonalisationOnboarding] = useState(false)
+
+  // Wrapper that also clears dev override
+  const setFlowState = (state) => {
+    _setFlowState(state)
+    if (devSim) devSim.setFlowStateOverride(null)
+  }
+
+  // Apply dev flow override when set
+  const effectiveFlowState = flowOverride || flowState
+
+  // 48-hour gate: use simulated days in dev mode, real elapsed days in production
+  const daysWithApp = DEV_MODE && devSim
+    ? devSim.sim.simulatedDaysWithApp
+    : user.registeredAt
+      ? Math.floor((Date.now() - new Date(user.registeredAt)) / 86400000)
+      : 0
 
   // Show splash screen for first-time visitors
   if (isFirstVisit) {
@@ -58,13 +93,23 @@ function AppContent() {
 
   // Show onboarding if registered but not completed
   if (user.state && user.state !== 'guest' && !user.onboardingCompleted) {
+    // After permissions steps, show personalisation screen before completing
+    if (showPersonalisationOnboarding) {
+      return (
+        <PersonalisationOnboarding
+          savePersonalisation={savePersonalisation}
+          onComplete={() => {
+            setShowPersonalisationOnboarding(false)
+            completeOnboarding()
+          }}
+        />
+      )
+    }
     return (
       <OnboardingSteps
         isPremium={isPremium}
         onUpdatePermission={updatePermission}
-        onComplete={(permissions) => {
-          completeOnboarding()
-        }}
+        onComplete={() => setShowPersonalisationOnboarding(true)}
       />
     )
   }
@@ -145,12 +190,12 @@ function AppContent() {
             />
           </main>
           <RegistrationWall
-            isOpen={flowState === FLOW_STATES.REGISTRATION}
+            isOpen={effectiveFlowState === FLOW_STATES.REGISTRATION}
             onClose={() => setFlowState(FLOW_STATES.NONE)}
             onRegister={handleRegister}
           />
           <Paywall
-            isOpen={flowState === FLOW_STATES.PAYWALL}
+            isOpen={effectiveFlowState === FLOW_STATES.PAYWALL}
             onSelectPlan={handlePaywallSelect}
             onClose={() => setFlowState(FLOW_STATES.NONE)}
             userName={user.profile?.name}
@@ -232,6 +277,16 @@ function AppContent() {
             {/* Forecast header: live map, 24h timeline, today's insights */}
             <LiveForecast />
 
+            {/* Personalisation question cards — registered users only, after 48h, unanswered/undismissed */}
+            {(user.state === 'registered_free' || user.state === 'registered_premium') && (
+              <PersonalisationCards
+                personalization={user.personalization}
+                onSave={savePersonalisation}
+                onDismiss={dismissPersonalisationQuestion}
+                daysWithApp={daysWithApp}
+              />
+            )}
+
             {/* Example data banner for non-premium users */}
             {!isPremium && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center gap-3">
@@ -298,43 +353,56 @@ function AppContent() {
         return <YourExposure />
       case 'profile':
         return (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <svg viewBox="0 0 24 24" className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              {user.profile?.name || 'Profile & Settings'}
-            </h2>
-            <p className="text-sm text-gray-500 mb-2">
-              {user.profile?.email || 'Coming soon'}
-            </p>
-            {user.state && (
-              <p className="text-xs text-gray-400 mb-4">
-                Status: {user.state === 'registered_premium' ? 'Premium' : user.state === 'registered_free' ? 'Free Account' : 'Guest'}
+          <div className="flex flex-col items-center pt-10 pb-16">
+            {/* Avatar + user info (centred) */}
+            <div className="flex flex-col items-center text-center mb-2">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <svg viewBox="0 0 24 24" className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                {user.profile?.name || 'Profile & Settings'}
+              </h2>
+              <p className="text-sm text-gray-500 mb-1">
+                {user.profile?.email || 'Coming soon'}
               </p>
-            )}
+              {user.state && (
+                <p className="text-xs text-gray-400 mb-3">
+                  Status: {user.state === 'registered_premium' ? 'Premium' : user.state === 'registered_free' ? 'Free Account' : 'Guest'}
+                </p>
+              )}
 
-            {/* Upgrade button for free users */}
-            {user.state === 'registered_free' && (
-              <button
-                onClick={() => setFlowState(FLOW_STATES.PAYWALL)}
-                className="bg-brand text-white font-semibold py-2.5 px-6 rounded-xl text-sm hover:bg-brand/90 transition-colors mb-4"
-              >
-                Upgrade to Premium
-              </button>
-            )}
+              {/* Upgrade button for free users */}
+              {user.state === 'registered_free' && (
+                <button
+                  onClick={() => setFlowState(FLOW_STATES.PAYWALL)}
+                  className="bg-brand text-white font-semibold py-2.5 px-6 rounded-xl text-sm hover:bg-brand/90 transition-colors mb-2"
+                >
+                  Upgrade to Premium
+                </button>
+              )}
 
-            {/* Sign up button for guests */}
-            {isGuest && (
-              <button
-                onClick={() => setFlowState(FLOW_STATES.REGISTRATION)}
-                className="bg-brand text-white font-semibold py-2.5 px-6 rounded-xl text-sm hover:bg-brand/90 transition-colors mb-4"
-              >
-                Create Free Account
-              </button>
+              {/* Sign up button for guests */}
+              {isGuest && (
+                <button
+                  onClick={() => setFlowState(FLOW_STATES.REGISTRATION)}
+                  className="bg-brand text-white font-semibold py-2.5 px-6 rounded-xl text-sm hover:bg-brand/90 transition-colors mb-2"
+                >
+                  Create Free Account
+                </button>
+              )}
+            </div>
+
+            {/* Personalisation settings — full width, registered users only */}
+            {(user.state === 'registered_free' || user.state === 'registered_premium') && (
+              <PersonalisationSettings
+                personalization={user.personalization}
+                onSave={savePersonalisation}
+                onDismiss={dismissPersonalisationQuestion}
+                onRestore={restorePersonalisationQuestion}
+              />
             )}
 
             {/* Dev: Reset button */}
@@ -363,7 +431,7 @@ function AppContent() {
 
       {/* Registration wall modal */}
       <RegistrationWall
-        isOpen={flowState === FLOW_STATES.REGISTRATION}
+        isOpen={effectiveFlowState === FLOW_STATES.REGISTRATION}
         onClose={() => {
           setFlowState(FLOW_STATES.NONE)
           setPendingLockedItem(null)
@@ -373,7 +441,7 @@ function AppContent() {
 
       {/* Paywall modal */}
       <Paywall
-        isOpen={flowState === FLOW_STATES.PAYWALL}
+        isOpen={effectiveFlowState === FLOW_STATES.PAYWALL}
         onSelectPlan={handlePaywallSelect}
         onClose={() => setFlowState(FLOW_STATES.NONE)}
         userName={user.profile?.name}
@@ -382,11 +450,28 @@ function AppContent() {
   )
 }
 
+function AppWithDevSim() {
+  const { sim } = useDevSim()
+  const overrides = sim.isActive ? sim.userOverrides : undefined
+
+  return (
+    <UserProvider overrides={overrides}>
+      <NotificationProvider>
+        <AppContent />
+        {DEV_MODE && <DevLauncher />}
+        {DEV_MODE && <DevPanel />}
+        <NotificationToast />
+        <NotificationBanner />
+      </NotificationProvider>
+    </UserProvider>
+  )
+}
+
 function App() {
   return (
-    <UserProvider>
-      <AppContent />
-    </UserProvider>
+    <DevSimProvider>
+      <AppWithDevSim />
+    </DevSimProvider>
   )
 }
 

@@ -6,6 +6,7 @@ const STORAGE_KEY = 'airtrack_user'
 
 const DEFAULT_USER = {
   state: null, // null | 'guest' | 'registered_free' | 'registered_premium'
+  registeredAt: null, // ISO string set on first registration — used for 48h feed gate
   onboardingCompleted: false,
   permissions: {
     location: false,
@@ -23,9 +24,15 @@ const DEFAULT_USER = {
     email: '',
     authProvider: null, // 'google' | 'apple' | 'email'
   },
+  personalization: {
+    gender: null,           // string | null
+    dateOfBirth: null,      // 'YYYY-MM-DD' string | null
+    healthConditions: null, // false (answered "No") | string[] (conditions) | null (unanswered)
+    dismissed: [],          // question IDs permanently dismissed from the feed
+  },
 }
 
-export function UserProvider({ children }) {
+export function UserProvider({ children, overrides }) {
   const [user, setUser] = useState(() => {
     // Load from localStorage on mount
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -77,6 +84,7 @@ export function UserProvider({ children }) {
     setUser(prev => ({
       ...prev,
       state: 'registered_free',
+      registeredAt: prev.registeredAt || new Date().toISOString(), // only set on first registration
       profile: { ...profile, authProvider },
     }))
   }
@@ -107,25 +115,83 @@ export function UserProvider({ children }) {
     setUser(prev => ({ ...prev, onboardingCompleted: true }))
   }
 
+  // Personalisation: save an answer for a question field
+  const savePersonalisation = (field, value) => {
+    setUser(prev => ({
+      ...prev,
+      personalization: {
+        ...(prev.personalization || {}),
+        [field]: value,
+      },
+    }))
+  }
+
+  // Personalisation: permanently dismiss a question from the feed
+  const dismissPersonalisationQuestion = (id) => {
+    setUser(prev => ({
+      ...prev,
+      personalization: {
+        ...(prev.personalization || {}),
+        dismissed: [...(prev.personalization?.dismissed || []), id],
+      },
+    }))
+  }
+
+  // Personalisation: restore a dismissed question back to the feed
+  const restorePersonalisationQuestion = (id) => {
+    setUser(prev => ({
+      ...prev,
+      personalization: {
+        ...(prev.personalization || {}),
+        dismissed: (prev.personalization?.dismissed || []).filter(d => d !== id),
+      },
+    }))
+  }
+
   // For testing/demo: reset to initial state
   const resetUser = () => {
     localStorage.removeItem(STORAGE_KEY)
     setUser(DEFAULT_USER)
   }
 
+  // Merge dev-sim overrides when active
+  const effectiveUser = overrides
+    ? {
+        ...user,
+        ...overrides,
+        permissions: { ...user.permissions, ...(overrides.permissions || {}) },
+        subscription: { ...user.subscription, ...(overrides.subscription || {}) },
+        profile: { ...user.profile, ...(overrides.profile || {}) },
+      }
+    : user
+
   const value = {
-    user,
-    isContentLocked,
-    isFirstVisit: user.state === null,
-    isGuest: user.state === 'guest',
-    isRegisteredFree: user.state === 'registered_free',
-    isPremium: user.state === 'registered_premium',
+    user: effectiveUser,
+    isContentLocked: overrides
+      ? (contentType, item = null) => {
+          // Re-evaluate locking with effective user
+          if (effectiveUser.state === 'registered_premium') return false
+          if (contentType === 'forecast') return false
+          if (effectiveUser.state === 'registered_free' && contentType === 'segment') {
+            if (item?.activityType === 'running' && item?.hasStrava) return false
+          }
+          if (effectiveUser.state === 'guest' || effectiveUser.state === 'registered_free') return true
+          return true
+        }
+      : isContentLocked,
+    isFirstVisit: effectiveUser.state === null,
+    isGuest: effectiveUser.state === 'guest',
+    isRegisteredFree: effectiveUser.state === 'registered_free',
+    isPremium: effectiveUser.state === 'registered_premium',
     setGuest,
     register,
     setSubscription,
     updatePermission,
     completeOnboarding,
     resetUser,
+    savePersonalisation,
+    dismissPersonalisationQuestion,
+    restorePersonalisationQuestion,
   }
 
   return (
