@@ -40,14 +40,16 @@ export const PERSONAS = {
     label: 'New Visitor',
     emoji: '👋',
     description: 'First-time user, splash screen',
+    // state: 'guest' so setGuest() has no override conflict; splash shown via flowStateOverride
     overrides: {
-      state: null,
-      onboardingCompleted: false,
-      permissions: { location: false, notifications: false, tracking: true, appleHealth: false, strava: false },
+      state: 'guest',
+      onboardingCompleted: true,
+      permissions: { location: false, notifications: false, tracking: false, appleHealth: false, strava: false },
       subscription: { plan: 'none', startDate: null },
       profile: { name: '', email: '', authProvider: null },
     },
     days: 0,
+    flowOverride: 'splash', // signal to PersonaSection to also set flowStateOverride
   },
   guest_explorer: {
     id: 'guest_explorer',

@@ -1,7 +1,7 @@
 import { useDevSim, PERSONAS } from '../../../contexts/DevSimContext'
 
 export default function PersonaSection() {
-  const { sim, loadPersona, closePanel } = useDevSim()
+  const { sim, loadPersona, setFlowStateOverride, closePanel } = useDevSim()
 
   return (
     <div className="space-y-1.5">
@@ -15,6 +15,12 @@ export default function PersonaSection() {
             key={persona.id}
             onClick={() => {
               loadPersona(persona.id)
+              // Some personas need a flow override (e.g. new_visitor shows splash screen)
+              if (persona.flowOverride) {
+                setFlowStateOverride(persona.flowOverride)
+              } else {
+                setFlowStateOverride(null)
+              }
               closePanel()
             }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${

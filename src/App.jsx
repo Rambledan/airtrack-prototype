@@ -16,8 +16,6 @@ import RouteOptimizationDetail from './components/optimization/RouteOptimization
 import SplashScreen from './components/onboarding/SplashScreen'
 import RegistrationWall from './components/onboarding/RegistrationWall'
 import Paywall from './components/onboarding/Paywall'
-import OnboardingSteps from './components/onboarding/OnboardingSteps'
-import PersonalisationOnboarding from './components/onboarding/PersonalisationOnboarding'
 import { LockedRunningDetailPreview } from './components/shared/LockedDetailPreview'
 import LockedOverlay from './components/shared/LockedOverlay'
 import DevLauncher from './components/devpanel/DevLauncher'
@@ -25,7 +23,7 @@ import DevPanel from './components/devpanel/DevPanel'
 import NotificationToast from './components/notifications/NotificationToast'
 import NotificationBanner from './components/notifications/NotificationBanner'
 import PersonalisationCards from './components/personalisation/PersonalisationCards'
-import PersonalisationSettings from './components/personalisation/PersonalisationSettings'
+import ProfileSettings from './components/profile/ProfileSettings'
 
 const DEV_MODE = true
 
@@ -47,7 +45,7 @@ function AppContent() {
     register,
     setSubscription,
     updatePermission,
-    completeOnboarding,
+    updateSetting,
     resetUser,
     savePersonalisation,
     dismissPersonalisationQuestion,
@@ -62,7 +60,6 @@ function AppContent() {
   const [detailView, setDetailView] = useState(null)
   const [flowState, _setFlowState] = useState(FLOW_STATES.NONE)
   const [pendingLockedItem, setPendingLockedItem] = useState(null)
-  const [showPersonalisationOnboarding, setShowPersonalisationOnboarding] = useState(false)
 
   // Wrapper that also clears dev override
   const setFlowState = (state) => {
@@ -80,6 +77,20 @@ function AppContent() {
       ? Math.floor((Date.now() - new Date(user.registeredAt)) / 86400000)
       : 0
 
+  // DEV: force-show splash screen without overriding user state.
+  // Using a flowStateOverride avoids the bug where state:null override wins over
+  // setGuest(), leaving the user stuck on SplashScreen forever.
+  if (DEV_MODE && flowOverride === 'splash') {
+    return (
+      <SplashScreen
+        onContinue={() => {
+          if (!user.state) setGuest()   // advance real state if truly fresh
+          setFlowState(FLOW_STATES.NONE) // clears the flowOverride; real state takes over
+        }}
+      />
+    )
+  }
+
   // Show splash screen for first-time visitors
   if (isFirstVisit) {
     return (
@@ -87,29 +98,6 @@ function AppContent() {
         onContinue={() => {
           setGuest()
         }}
-      />
-    )
-  }
-
-  // Show onboarding if registered but not completed
-  if (user.state && user.state !== 'guest' && !user.onboardingCompleted) {
-    // After permissions steps, show personalisation screen before completing
-    if (showPersonalisationOnboarding) {
-      return (
-        <PersonalisationOnboarding
-          savePersonalisation={savePersonalisation}
-          onComplete={() => {
-            setShowPersonalisationOnboarding(false)
-            completeOnboarding()
-          }}
-        />
-      )
-    }
-    return (
-      <OnboardingSteps
-        isPremium={isPremium}
-        onUpdatePermission={updatePermission}
-        onComplete={() => setShowPersonalisationOnboarding(true)}
       />
     )
   }
@@ -124,7 +112,6 @@ function AppContent() {
   const handlePaywallSelect = (plan) => {
     setSubscription(plan)
     setFlowState(FLOW_STATES.NONE)
-    // Onboarding will show automatically since onboardingCompleted is false
   }
 
   // Handle locked content tap
@@ -353,66 +340,20 @@ function AppContent() {
         return <YourExposure />
       case 'profile':
         return (
-          <div className="flex flex-col items-center pt-10 pb-16">
-            {/* Avatar + user info (centred) */}
-            <div className="flex flex-col items-center text-center mb-2">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                <svg viewBox="0 0 24 24" className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-1">
-                {user.profile?.name || 'Profile & Settings'}
-              </h2>
-              <p className="text-sm text-gray-500 mb-1">
-                {user.profile?.email || 'Coming soon'}
-              </p>
-              {user.state && (
-                <p className="text-xs text-gray-400 mb-3">
-                  Status: {user.state === 'registered_premium' ? 'Premium' : user.state === 'registered_free' ? 'Free Account' : 'Guest'}
-                </p>
-              )}
-
-              {/* Upgrade button for free users */}
-              {user.state === 'registered_free' && (
-                <button
-                  onClick={() => setFlowState(FLOW_STATES.PAYWALL)}
-                  className="bg-brand text-white font-semibold py-2.5 px-6 rounded-xl text-sm hover:bg-brand/90 transition-colors mb-2"
-                >
-                  Upgrade to Premium
-                </button>
-              )}
-
-              {/* Sign up button for guests */}
-              {isGuest && (
-                <button
-                  onClick={() => setFlowState(FLOW_STATES.REGISTRATION)}
-                  className="bg-brand text-white font-semibold py-2.5 px-6 rounded-xl text-sm hover:bg-brand/90 transition-colors mb-2"
-                >
-                  Create Free Account
-                </button>
-              )}
-            </div>
-
-            {/* Personalisation settings — full width, registered users only */}
-            {(user.state === 'registered_free' || user.state === 'registered_premium') && (
-              <PersonalisationSettings
-                personalization={user.personalization}
-                onSave={savePersonalisation}
-                onDismiss={dismissPersonalisationQuestion}
-                onRestore={restorePersonalisationQuestion}
-              />
-            )}
-
-            {/* Dev: Reset button */}
-            <button
-              onClick={resetUser}
-              className="text-xs text-gray-400 hover:text-gray-600 mt-8"
-            >
-              Reset (Dev Only)
-            </button>
-          </div>
+          <ProfileSettings
+            user={user}
+            isPremium={isPremium}
+            isGuest={isGuest}
+            onUpdatePermission={updatePermission}
+            onUpdateSetting={updateSetting}
+            onSavePersonalisation={savePersonalisation}
+            onDismissPersonalisation={dismissPersonalisationQuestion}
+            onRestorePersonalisation={restorePersonalisationQuestion}
+            onUpgrade={() => setFlowState(FLOW_STATES.PAYWALL)}
+            onSignUp={() => setFlowState(FLOW_STATES.REGISTRATION)}
+            onManageBilling={() => setFlowState(FLOW_STATES.PAYWALL)}
+            onReset={resetUser}
+          />
         )
       default:
         return null

@@ -7,13 +7,18 @@ const STORAGE_KEY = 'airtrack_user'
 const DEFAULT_USER = {
   state: null, // null | 'guest' | 'registered_free' | 'registered_premium'
   registeredAt: null, // ISO string set on first registration — used for 48h feed gate
-  onboardingCompleted: false,
+  onboardingCompleted: true, // onboarding flow removed; always true for new registrations
   permissions: {
     location: false,
     notifications: false,
-    tracking: true,
+    tracking: false,
     appleHealth: false,
     strava: false,
+  },
+  settings: {
+    summaryNotifications: true,
+    forecastNotifications: true,
+    timezone: 'auto', // 'auto' = use device timezone, or IANA string e.g. 'Europe/London'
   },
   subscription: {
     plan: 'none', // 'none' | 'trial' | 'premium'
@@ -85,6 +90,7 @@ export function UserProvider({ children, overrides }) {
       ...prev,
       state: 'registered_free',
       registeredAt: prev.registeredAt || new Date().toISOString(), // only set on first registration
+      onboardingCompleted: true, // onboarding flow removed — go straight to home after registration
       profile: { ...profile, authProvider },
     }))
   }
@@ -107,6 +113,16 @@ export function UserProvider({ children, overrides }) {
       permissions: {
         ...prev.permissions,
         [permission]: value,
+      },
+    }))
+  }
+
+  const updateSetting = (key, value) => {
+    setUser(prev => ({
+      ...prev,
+      settings: {
+        ...(prev.settings || {}),
+        [key]: value,
       },
     }))
   }
@@ -160,6 +176,7 @@ export function UserProvider({ children, overrides }) {
         ...user,
         ...overrides,
         permissions: { ...user.permissions, ...(overrides.permissions || {}) },
+        settings: { ...user.settings, ...(overrides.settings || {}) },
         subscription: { ...user.subscription, ...(overrides.subscription || {}) },
         profile: { ...user.profile, ...(overrides.profile || {}) },
       }
@@ -187,6 +204,7 @@ export function UserProvider({ children, overrides }) {
     register,
     setSubscription,
     updatePermission,
+    updateSetting,
     completeOnboarding,
     resetUser,
     savePersonalisation,

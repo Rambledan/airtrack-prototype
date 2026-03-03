@@ -7,8 +7,11 @@ const STAGES = [
     emoji: '✨',
     description: 'First-time visitor experience',
     action: (ctx) => {
-      ctx.updateOverrideField('state', null)
-      ctx.updateOverrideField('onboardingCompleted', false)
+      // Use flowStateOverride rather than overriding user state to null —
+      // overriding state: null causes setGuest() to have no visible effect
+      // (the override always wins over the real state), leaving the user stuck
+      // on SplashScreen. The flow override is cleared when "Get Started" is clicked.
+      ctx.setFlowStateOverride('splash')
       ctx.closePanel()
     },
   },
@@ -43,17 +46,6 @@ const STAGES = [
       ctx.updateOverrideField('state', 'registered_free')
       ctx.updateOverrideField('onboardingCompleted', true)
       ctx.setFlowStateOverride('paywall')
-      ctx.closePanel()
-    },
-  },
-  {
-    id: 'onboarding',
-    label: 'Onboarding Steps',
-    emoji: '🚀',
-    description: 'Permission setup flow',
-    action: (ctx) => {
-      ctx.updateOverrideField('state', 'registered_free')
-      ctx.updateOverrideField('onboardingCompleted', false)
       ctx.closePanel()
     },
   },
