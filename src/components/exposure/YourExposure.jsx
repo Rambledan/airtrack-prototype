@@ -46,6 +46,56 @@ const AI_SUMMARIES = {
   ],
 }
 
+// ── Top Opportunities data ────────────────────────────────────────────────────
+
+const OPPORTUNITY_SETS = {
+  day: [
+    [
+      { activityType: 'cycling', label: 'Morning Commute', location: 'Islington → Canary Wharf', durationMinutes: 45, score: 58, potentialScore: 82, improvementType: 'route' },
+      { activityType: 'running', label: 'Evening Run', location: "Regent's Canal", durationMinutes: 35, score: 62, potentialScore: 81, improvementType: 'time' },
+      { activityType: 'walking', label: 'Lunch Walk', location: 'Islington', durationMinutes: 20, score: 65, potentialScore: 78, improvementType: 'both' },
+    ],
+    [
+      { activityType: 'walking', label: 'School Run', location: 'Camden → Primrose Hill', durationMinutes: 30, score: 55, potentialScore: 79, improvementType: 'route' },
+      { activityType: 'cycling', label: 'Afternoon Ride', location: 'Victoria Park Loop', durationMinutes: 40, score: 60, potentialScore: 77, improvementType: 'time' },
+      { activityType: 'running', label: 'Morning Jog', location: 'Hackney Marshes', durationMinutes: 25, score: 67, potentialScore: 80, improvementType: 'both' },
+    ],
+    [
+      { activityType: 'cycling', label: 'Commute', location: 'Brixton → Waterloo', durationMinutes: 50, score: 56, potentialScore: 83, improvementType: 'both' },
+      { activityType: 'walking', label: 'Evening Stroll', location: 'Southbank', durationMinutes: 35, score: 63, potentialScore: 78, improvementType: 'route' },
+      { activityType: 'running', label: 'Lunch Run', location: 'Battersea Park', durationMinutes: 22, score: 66, potentialScore: 79, improvementType: 'time' },
+    ],
+  ],
+  week: [
+    [
+      { activityType: 'cycling', label: 'Daily Commute', location: 'Islington → Canary Wharf', durationMinutes: 45, score: 58, potentialScore: 82, improvementType: 'route', dayLabel: 'Mon–Fri' },
+      { activityType: 'running', label: 'Regular Run', location: "Regent's Canal", durationMinutes: 35, score: 62, potentialScore: 81, improvementType: 'time', dayLabel: 'Tue & Thu' },
+      { activityType: 'walking', label: 'Lunch Walk', location: 'Islington', durationMinutes: 20, score: 65, potentialScore: 78, improvementType: 'both', dayLabel: 'Mon–Fri' },
+    ],
+    [
+      { activityType: 'cycling', label: 'Commute', location: 'Brixton → Waterloo', durationMinutes: 50, score: 56, potentialScore: 83, improvementType: 'both', dayLabel: 'Mon–Fri' },
+      { activityType: 'walking', label: 'School Run', location: 'Camden → Primrose Hill', durationMinutes: 30, score: 55, potentialScore: 79, improvementType: 'route', dayLabel: 'Mon, Wed & Fri' },
+      { activityType: 'running', label: 'Evening Run', location: 'Victoria Park', durationMinutes: 40, score: 60, potentialScore: 77, improvementType: 'time', dayLabel: 'Wed & Sat' },
+    ],
+  ],
+}
+
+const IMPROVEMENT_LABELS = {
+  route: { label: 'Better Route', style: 'bg-blue-50 text-blue-600' },
+  time:  { label: 'Better Time',  style: 'bg-purple-50 text-purple-600' },
+  both:  { label: 'Route + Time', style: 'bg-emerald-50 text-emerald-600' },
+}
+
+const ACTIVITY_STYLES = {
+  cycling: { bg: 'bg-green-50',   text: 'text-green-700',   label: 'Cycling' },
+  running: { bg: 'bg-orange-50',  text: 'text-orange-700',  label: 'Running' },
+  walking: { bg: 'bg-sky-50',     text: 'text-sky-700',     label: 'Walking' },
+  car:     { bg: 'bg-gray-100',   text: 'text-gray-600',    label: 'Driving' },
+  bus:     { bg: 'bg-indigo-50',  text: 'text-indigo-700',  label: 'Bus'     },
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function RangeToggle({ range, onRangeChange }) {
   return (
     <div className="flex bg-gray-100 rounded-xl p-1">
@@ -251,6 +301,87 @@ function CityBenchmark({ userScore, cityAverage = 68 }) {
           : `Room for improvement - try optimizing your routes`
         }
       </p>
+    </div>
+  )
+}
+
+function TopOpportunities({ range, currentIndex }) {
+  const sets = OPPORTUNITY_SETS[range]
+  const opportunities = sets[currentIndex % sets.length]
+
+  const rankStyles = [
+    'bg-amber-100 text-amber-700',
+    'bg-gray-200 text-gray-600',
+    'bg-orange-100 text-orange-700',
+  ]
+
+  return (
+    <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-base font-semibold text-gray-900">Top Opportunities</h3>
+        <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100">
+          {range === 'day' ? 'Today' : 'This week'}
+        </span>
+      </div>
+
+      <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+        Segments where changing your route or timing would have the biggest impact on your score.
+      </p>
+
+      <div className="space-y-2.5">
+        {opportunities.map((opp, idx) => {
+          const gain = opp.potentialScore - opp.score
+          const actStyle = ACTIVITY_STYLES[opp.activityType] || ACTIVITY_STYLES.walking
+          const impLabel = IMPROVEMENT_LABELS[opp.improvementType]
+
+          return (
+            <div key={idx} className="flex items-start gap-3 p-3.5 bg-gray-50 rounded-2xl">
+              {/* Rank badge */}
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${rankStyles[idx]}`}>
+                {idx + 1}
+              </div>
+
+              {/* Main content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${actStyle.bg} ${actStyle.text}`}>
+                    {actStyle.label}
+                  </span>
+                  {opp.dayLabel && (
+                    <span className="text-[10px] text-gray-400">{opp.dayLabel}</span>
+                  )}
+                </div>
+                <p className="text-sm font-semibold text-gray-900 truncate">{opp.label}</p>
+                <p className="text-xs text-gray-400 truncate mt-0.5">{opp.location} · {opp.durationMinutes} min</p>
+              </div>
+
+              {/* Right side: score gap + badges */}
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                {/* Score gap */}
+                <div className="flex items-center gap-1 text-xs">
+                  <span className="font-medium text-gray-500">{opp.score}%</span>
+                  <svg viewBox="0 0 24 24" className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                  <span className="font-semibold" style={{ color: getScoreColor(opp.potentialScore) }}>
+                    {opp.potentialScore}%
+                  </span>
+                </div>
+
+                {/* Gain badge */}
+                <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full">
+                  +{gain} pts
+                </span>
+
+                {/* Improvement type */}
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${impLabel.style}`}>
+                  {impLabel.label}
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -473,6 +604,9 @@ export default function YourExposure() {
 
       {/* City Benchmark */}
       <CityBenchmark userScore={score} />
+
+      {/* Top Opportunities */}
+      <TopOpportunities range={range} currentIndex={currentIndex} />
 
       {/* Leaderboard */}
       <Leaderboard onJoinNew={() => setShowJoinModal(true)} />
