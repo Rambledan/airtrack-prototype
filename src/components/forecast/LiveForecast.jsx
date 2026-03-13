@@ -368,17 +368,6 @@ function TimeSlider({ forecastData, selectedIndex, onIndexChange, selectedDay, o
           </div>
         </div>
 
-        {/* Slider */}
-        <input
-          type="range"
-          min="0"
-          max={forecastData.length - 1}
-          value={selectedIndex}
-          onChange={(e) => onIndexChange(parseInt(e.target.value))}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand"
-          disabled={isContentLocked}
-        />
-
         {/* Current forecast info */}
         <div className="mt-4 flex items-center justify-between p-3 bg-gray-50 rounded-xl">
           <div>
