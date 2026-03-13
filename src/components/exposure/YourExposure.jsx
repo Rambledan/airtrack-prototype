@@ -236,26 +236,6 @@ function ScoreRing({ score, size = 140 }) {
   )
 }
 
-function AISummary({ range }) {
-  const summaries = AI_SUMMARIES[range]
-  const summary = summaries[Math.floor(Math.random() * summaries.length)]
-
-  return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-5 border border-indigo-100/40">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-          <svg viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2a4 4 0 014 4c0 1.1-.45 2.1-1.17 2.83L12 12l-2.83-3.17A4 4 0 1112 2z" />
-            <path d="M12 12v10" />
-            <path d="M8 18h8" />
-          </svg>
-        </div>
-        <span className="text-sm font-semibold text-indigo-900">AI Insights</span>
-      </div>
-      <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
-    </div>
-  )
-}
 
 function CityBenchmark({ userScore, cityAverage = 68 }) {
   const difference = userScore - cityAverage
@@ -661,12 +641,6 @@ export default function YourExposure({ onViewTimeOptimization, onViewRouteOptimi
         <ScoreRing score={score} />
       </div>
 
-      {/* AI Summary */}
-      <AISummary range={range} />
-
-      {/* City Benchmark */}
-      <CityBenchmark userScore={score} />
-
       {/* Top Opportunities */}
       <TopOpportunities
         range={range}
@@ -675,6 +649,9 @@ export default function YourExposure({ onViewTimeOptimization, onViewRouteOptimi
         onViewTimeOptimization={onViewTimeOptimization}
         onViewRouteOptimization={onViewRouteOptimization}
       />
+
+      {/* City Benchmark */}
+      <CityBenchmark userScore={score} />
 
       {/* Leaderboard */}
       <Leaderboard onJoinNew={() => setShowJoinModal(true)} />
