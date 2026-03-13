@@ -94,6 +94,25 @@ const ACTIVITY_STYLES = {
   bus:     { bg: 'bg-indigo-50',  text: 'text-indigo-700',  label: 'Bus'     },
 }
 
+// Returns total outdoor minutes for the selected period
+const getOutdoorMinutes = (range, currentIndex) => {
+  if (range === 'day') return EXPOSURE_DATA[currentIndex]?.outdoorMinutes || 90
+  const startIdx = currentIndex * 7
+  return EXPOSURE_DATA.slice(startIdx, startIdx + 7).reduce((s, d) => s + (d.outdoorMinutes || 0), 0)
+}
+
+// Build a minimal segment object from an opportunity so detail screens can render
+const makeSegment = (opp) => ({
+  activityType: opp.activityType,
+  label: opp.label,
+  location: opp.location,
+  durationMinutes: opp.durationMinutes,
+  score: opp.score,
+  potentialScore: opp.potentialScore,
+  improvementType: opp.improvementType,
+  startTime: new Date(new Date().setHours(8, 0, 0, 0)).toISOString(),
+})
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 function RangeToggle({ range, onRangeChange }) {
@@ -305,9 +324,17 @@ function CityBenchmark({ userScore, cityAverage = 68 }) {
   )
 }
 
-function TopOpportunities({ range, currentIndex }) {
+function TopOpportunities({ range, currentIndex, userScore, onViewTimeOptimization, onViewRouteOptimization }) {
   const sets = OPPORTUNITY_SETS[range]
   const opportunities = sets[currentIndex % sets.length]
+
+  // Estimate how much the overall score would improve if all 3 are acted on
+  const outdoorMins = Math.max(getOutdoorMinutes(range, currentIndex), 1)
+  const totalWeightedGain = opportunities.reduce(
+    (s, o) => s + o.durationMinutes * (o.potentialScore - o.score), 0
+  )
+  const estimatedGain = Math.max(1, Math.min(25, Math.round(totalWeightedGain / outdoorMins)))
+  const potentialScore = Math.min(100, userScore + estimatedGain)
 
   const rankStyles = [
     'bg-amber-100 text-amber-700',
@@ -324,59 +351,94 @@ function TopOpportunities({ range, currentIndex }) {
         </span>
       </div>
 
-      <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-        Segments where changing your route or timing would have the biggest impact on your score.
+      <p className="text-xs text-gray-400 mb-3 leading-relaxed">
+        Segments where changing your route or timing would have the biggest impact.
       </p>
+
+      {/* Score improvement summary */}
+      <div className="flex items-center justify-between p-3 bg-green-50 rounded-2xl border border-green-100 mb-4">
+        <p className="text-xs text-gray-600">Act on all three and your score could reach</p>
+        <div className="flex items-center gap-1.5 shrink-0 ml-3">
+          <span className="text-sm font-bold" style={{ color: getScoreColor(potentialScore) }}>
+            {potentialScore}%
+          </span>
+          <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
+            +{estimatedGain} pts
+          </span>
+        </div>
+      </div>
 
       <div className="space-y-2.5">
         {opportunities.map((opp, idx) => {
           const gain = opp.potentialScore - opp.score
           const actStyle = ACTIVITY_STYLES[opp.activityType] || ACTIVITY_STYLES.walking
           const impLabel = IMPROVEMENT_LABELS[opp.improvementType]
+          const seg = makeSegment(opp)
 
           return (
-            <div key={idx} className="flex items-start gap-3 p-3.5 bg-gray-50 rounded-2xl">
-              {/* Rank badge */}
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${rankStyles[idx]}`}>
-                {idx + 1}
-              </div>
-
-              {/* Main content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${actStyle.bg} ${actStyle.text}`}>
-                    {actStyle.label}
-                  </span>
-                  {opp.dayLabel && (
-                    <span className="text-[10px] text-gray-400">{opp.dayLabel}</span>
-                  )}
-                </div>
-                <p className="text-sm font-semibold text-gray-900 truncate">{opp.label}</p>
-                <p className="text-xs text-gray-400 truncate mt-0.5">{opp.location} · {opp.durationMinutes} min</p>
-              </div>
-
-              {/* Right side: score gap + badges */}
-              <div className="flex flex-col items-end gap-1.5 shrink-0">
-                {/* Score gap */}
-                <div className="flex items-center gap-1 text-xs">
-                  <span className="font-medium text-gray-500">{opp.score}%</span>
-                  <svg viewBox="0 0 24 24" className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                  <span className="font-semibold" style={{ color: getScoreColor(opp.potentialScore) }}>
-                    {opp.potentialScore}%
-                  </span>
+            <div key={idx} className="p-3.5 bg-gray-50 rounded-2xl">
+              {/* Top row: rank + content + score gap */}
+              <div className="flex items-start gap-3">
+                {/* Rank badge */}
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${rankStyles[idx]}`}>
+                  {idx + 1}
                 </div>
 
-                {/* Gain badge */}
-                <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full">
-                  +{gain} pts
-                </span>
+                {/* Main content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${actStyle.bg} ${actStyle.text}`}>
+                      {actStyle.label}
+                    </span>
+                    {opp.dayLabel && (
+                      <span className="text-[10px] text-gray-400">{opp.dayLabel}</span>
+                    )}
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900 truncate">{opp.label}</p>
+                  <p className="text-xs text-gray-400 truncate mt-0.5">{opp.location} · {opp.durationMinutes} min</p>
+                </div>
 
-                {/* Improvement type */}
-                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${impLabel.style}`}>
-                  {impLabel.label}
-                </span>
+                {/* Right side: score gap + gain badge */}
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1 text-xs">
+                    <span className="font-medium text-gray-500">{opp.score}%</span>
+                    <svg viewBox="0 0 24 24" className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                    <span className="font-semibold" style={{ color: getScoreColor(opp.potentialScore) }}>
+                      {opp.potentialScore}%
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-green-600 bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
+                    +{gain} pts
+                  </span>
+                </div>
+              </div>
+
+              {/* CTA buttons */}
+              <div className="flex gap-2 mt-3 ml-10">
+                {(opp.improvementType === 'time' || opp.improvementType === 'both') && (
+                  <button
+                    onClick={() => onViewTimeOptimization?.(seg)}
+                    className="flex-1 flex items-center justify-center gap-1 py-1.5 px-3 rounded-xl text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 transition-colors"
+                  >
+                    Better time
+                    <svg viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
+                {(opp.improvementType === 'route' || opp.improvementType === 'both') && (
+                  <button
+                    onClick={() => onViewRouteOptimization?.(seg)}
+                    className="flex-1 flex items-center justify-center gap-1 py-1.5 px-3 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors"
+                  >
+                    Better route
+                    <svg viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           )
@@ -562,7 +624,7 @@ function JoinLeaderboardModal({ isOpen, onClose }) {
   )
 }
 
-export default function YourExposure() {
+export default function YourExposure({ onViewTimeOptimization, onViewRouteOptimization }) {
   const [range, setRange] = useState('day')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showJoinModal, setShowJoinModal] = useState(false)
@@ -606,7 +668,13 @@ export default function YourExposure() {
       <CityBenchmark userScore={score} />
 
       {/* Top Opportunities */}
-      <TopOpportunities range={range} currentIndex={currentIndex} />
+      <TopOpportunities
+        range={range}
+        currentIndex={currentIndex}
+        userScore={score}
+        onViewTimeOptimization={onViewTimeOptimization}
+        onViewRouteOptimization={onViewRouteOptimization}
+      />
 
       {/* Leaderboard */}
       <Leaderboard onJoinNew={() => setShowJoinModal(true)} />

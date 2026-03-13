@@ -335,12 +335,20 @@ function AppContent() {
                 onTap={() => setFlowState(FLOW_STATES.REGISTRATION)}
                 showLockIcon={true}
               >
-                <YourExposure />
+                <YourExposure
+                  onViewTimeOptimization={handleViewTimeOptimization}
+                  onViewRouteOptimization={handleViewRouteOptimization}
+                />
               </LockedOverlay>
             </div>
           )
         }
-        return <YourExposure />
+        return (
+          <YourExposure
+            onViewTimeOptimization={handleViewTimeOptimization}
+            onViewRouteOptimization={handleViewRouteOptimization}
+          />
+        )
       case 'profile':
         return (
           <ProfileSettings
