@@ -269,7 +269,21 @@ function MapView({ location, timeIndex, forecastData, isLive = true }) {
   )
 }
 
+// Activity breathing-rate factors — higher factor = more air inhaled = greater personal exposure
+const ACTIVITIES = [
+  { id: 'still',   label: 'Still',   factor: 1.0 },
+  { id: 'walking', label: 'Walking', factor: 1.1 },
+  { id: 'cycling', label: 'Cycling', factor: 1.2 },
+  { id: 'running', label: 'Running', factor: 1.3 },
+]
+
+// Adjusted score: breathing more air = greater pollution dose = lower effective quality score
+const applyActivity = (score, factor) =>
+  Math.max(0, Math.min(100, Math.round(score / factor)))
+
 function TimeSlider({ forecastData, selectedIndex, onIndexChange, selectedDay, onDayChange, isPremium, onUpgrade }) {
+  const [activity, setActivity] = useState('still')
+
   const formatTime = (date) => {
     return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
   }
@@ -285,6 +299,8 @@ function TimeSlider({ forecastData, selectedIndex, onIndexChange, selectedDay, o
   }
 
   const isContentLocked = selectedDay > 0 && !isPremium
+  const currentActivity = ACTIVITIES.find(a => a.id === activity)
+  const adjScore = (raw) => applyActivity(raw, currentActivity.factor)
 
   return (
     <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm">
@@ -317,6 +333,26 @@ function TimeSlider({ forecastData, selectedIndex, onIndexChange, selectedDay, o
         })}
       </div>
 
+      {/* Activity selector */}
+      <div className="flex gap-1 mb-4">
+        {ACTIVITIES.map(a => {
+          const isActive = a.id === activity
+          return (
+            <button
+              key={a.id}
+              onClick={() => setActivity(a.id)}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-brand/10 text-brand ring-1 ring-brand/25'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              {a.label}
+            </button>
+          )
+        })}
+      </div>
+
       {/* Timeline heading */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-gray-900">Forecast Timeline</h3>
@@ -330,20 +366,23 @@ function TimeSlider({ forecastData, selectedIndex, onIndexChange, selectedDay, o
         {/* Time bar visualization */}
         <div className="relative mb-4">
           <div className="flex gap-0.5 h-12 items-end">
-            {forecastData.map((data, i) => (
-              <button
-                key={i}
-                onClick={() => !isContentLocked && onIndexChange(i)}
-                className={`flex-1 rounded-t transition-all ${
-                  i === selectedIndex ? 'ring-2 ring-brand ring-offset-1' : ''
-                }`}
-                style={{
-                  height: `${(data.score / 100) * 100}%`,
-                  backgroundColor: getScoreColor(data.score),
-                  opacity: i === selectedIndex ? 1 : 0.6,
-                }}
-              />
-            ))}
+            {forecastData.map((data, i) => {
+              const s = adjScore(data.score)
+              return (
+                <button
+                  key={i}
+                  onClick={() => !isContentLocked && onIndexChange(i)}
+                  className={`flex-1 rounded-t transition-all ${
+                    i === selectedIndex ? 'ring-2 ring-brand ring-offset-1' : ''
+                  }`}
+                  style={{
+                    height: `${(s / 100) * 100}%`,
+                    backgroundColor: getScoreColor(s),
+                    opacity: i === selectedIndex ? 1 : 0.6,
+                  }}
+                />
+              )
+            })}
           </div>
 
           {/* Time labels */}
@@ -369,28 +408,30 @@ function TimeSlider({ forecastData, selectedIndex, onIndexChange, selectedDay, o
         </div>
 
         {/* Current forecast info */}
-        <div className="mt-4 flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-          <div>
-            <div className="text-xs text-gray-500">{formatLabel(forecastData[selectedIndex].time, selectedIndex)}</div>
-            <div className="text-lg font-bold text-gray-900">
-              {forecastData[selectedIndex].score}%
-              <span className="text-sm font-normal text-gray-500 ml-1 capitalize">
-                {forecastData[selectedIndex].level}
-              </span>
+        {(() => {
+          const s = adjScore(forecastData[selectedIndex].score)
+          return (
+            <div className="mt-4 flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+              <div>
+                <div className="text-xs text-gray-500">{formatLabel(forecastData[selectedIndex].time, selectedIndex)}</div>
+                <div className="text-lg font-bold text-gray-900">
+                  {s}%
+                  <span className="text-sm font-normal text-gray-500 ml-1 capitalize">
+                    {getScoreLevel(s)}
+                  </span>
+                </div>
+              </div>
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: `${getScoreColor(s)}20` }}
+              >
+                <span className="text-lg font-bold" style={{ color: getScoreColor(s) }}>
+                  {s}
+                </span>
+              </div>
             </div>
-          </div>
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: `${getScoreColor(forecastData[selectedIndex].score)}20` }}
-          >
-            <span
-              className="text-lg font-bold"
-              style={{ color: getScoreColor(forecastData[selectedIndex].score) }}
-            >
-              {forecastData[selectedIndex].score}
-            </span>
-          </div>
-        </div>
+          )
+        })()}
       </LockedOverlay>
     </div>
   )
