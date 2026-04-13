@@ -7,6 +7,7 @@ import NewLocationAlert from './NewLocationAlert'
 import PartnershipCTA from './PartnershipCTA'
 import BenchmarkCard from './BenchmarkCard'
 import LockedOverlay from '../shared/LockedOverlay'
+import MonitorSpikeAlert from './MonitorSpikeAlert'
 
 export default function FeedItem({
   item,
@@ -113,6 +114,9 @@ export default function FeedItem({
           <BenchmarkCard {...item} onViewExposure={locked ? handleLockedTap : () => onNavigateToTab?.('exposure')} />
         </LockedOverlay>
       )
+
+    case 'monitor-spike':
+      return <MonitorSpikeAlert {...item} />
 
     default:
       return null

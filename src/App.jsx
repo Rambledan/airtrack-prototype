@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import LondonMarathonPage from './components/marathon/LondonMarathonPage'
 import { UserProvider, useUser } from './contexts/UserContext'
 import { DevSimProvider, useDevSim } from './contexts/DevSimContext'
 import { NotificationProvider } from './contexts/NotificationContext'
@@ -11,6 +12,8 @@ import YourExposure from './components/exposure/YourExposure'
 import RecordActivity from './components/record/RecordActivity'
 import RunningDetail from './components/feed/RunningDetail'
 import IndoorDetail from './components/feed/IndoorDetail'
+import MonitorShopScreen from './components/indoor/MonitorShopScreen'
+import MonitorSetupFlow from './components/indoor/MonitorSetupFlow'
 import TimeOptimization from './components/optimization/TimeOptimization'
 import RouteOptimizationDetail from './components/optimization/RouteOptimizationDetail'
 import SplashScreen from './components/onboarding/SplashScreen'
@@ -60,6 +63,8 @@ function AppContent() {
   const [detailView, setDetailView] = useState(null)
   const [flowState, _setFlowState] = useState(FLOW_STATES.NONE)
   const [pendingLockedItem, setPendingLockedItem] = useState(null)
+  const [locationProfiles, setLocationProfiles] = useState({})
+  const [monitorLocations, setMonitorLocations] = useState({})
 
   // Wrapper that also clears dev override
   const setFlowState = (state) => {
@@ -126,6 +131,14 @@ function AppContent() {
 
   const handleViewIndoorDetail = (segment) => {
     setDetailView({ type: 'indoor', segment })
+  }
+
+  const handleSaveLocationProfile = (locationName, type, answers) => {
+    setLocationProfiles(prev => ({ ...prev, [locationName]: { type, answers } }))
+  }
+
+  const handleRegisterMonitor = (locationName, code) => {
+    setMonitorLocations(prev => ({ ...prev, [locationName]: { registered: true, code, calibrated: false } }))
   }
 
   const handleBackFromDetail = () => {
@@ -215,6 +228,42 @@ function AppContent() {
             <IndoorDetail
               segment={detailView.segment}
               onBack={() => setDetailView(null)}
+              locationProfiles={locationProfiles}
+              monitorLocations={monitorLocations}
+              onSaveLocationProfile={handleSaveLocationProfile}
+              onSetupMonitor={(seg) => setDetailView({ type: 'monitorSetup', segment: seg })}
+              onShopMonitor={(seg) => setDetailView({ type: 'monitorShop', segment: seg })}
+            />
+          </main>
+        </div>
+      )
+    }
+
+    if (detailView.type === 'monitorShop') {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <Header />
+          <main className="max-w-lg mx-auto px-4 pt-5 pb-24">
+            <MonitorShopScreen
+              onBack={() => setDetailView({ type: 'indoor', segment: detailView.segment })}
+              onHaveOne={() => setDetailView({ type: 'monitorSetup', segment: detailView.segment })}
+            />
+          </main>
+        </div>
+      )
+    }
+
+    if (detailView.type === 'monitorSetup') {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <Header />
+          <main className="max-w-lg mx-auto px-4 pt-5 pb-24">
+            <MonitorSetupFlow
+              segment={detailView.segment}
+              onBack={() => setDetailView({ type: 'indoor', segment: detailView.segment })}
+              onComplete={(locationName, code) => {
+                handleRegisterMonitor(locationName, code)
+              }}
             />
           </main>
         </div>
@@ -420,6 +469,10 @@ function AppWithDevSim() {
 }
 
 function App() {
+  // Serve the marathon partner page when ?view=marathon
+  if (new URLSearchParams(window.location.search).get('view') === 'marathon') {
+    return <LondonMarathonPage />
+  }
   return (
     <DevSimProvider>
       <AppWithDevSim />

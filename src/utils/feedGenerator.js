@@ -1,3 +1,5 @@
+import { LOCATION_NAME_TO_TYPE } from '../data/locationProfiles'
+
 // London-based locations
 const LOCATIONS = {
   home: 'Islington',
@@ -364,6 +366,7 @@ function generateDaySegments(date, template) {
       segment.constructionType = CONSTRUCTION_MAP[locKey]
       // Older eras → higher natural ventilation potential: Pre-1919=5 … Contemporary=1
       segment.ventilationRating = Math.max(1, 5 - eraIndex)
+      segment.locationType = LOCATION_NAME_TO_TYPE[activity.location] || 'home'
     }
 
     // A segment is a "10 Star Segment" only when both route and time ratings are 5
@@ -571,6 +574,26 @@ function generateDayInsights(date, dayIndex, daySegments = []) {
       distanceFromHomeMiles: location.distance,
       localScore,
       localScoreLevel: getScoreLevel(localScore),
+    })
+  }
+
+  // Monitor spike alert — only on today's feed, ~30% chance
+  if (isToday && Math.random() > 0.7) {
+    const spikeTime = new Date(Date.now() - randomBetween(10, 40) * 60000)
+    const SPIKE_TYPES = [
+      { pollutant: 'PM2.5', unit: 'µg/m³', value: randomBetween(35, 80) },
+      { pollutant: 'VOC',   unit: 'ppb',   value: randomBetween(200, 600) },
+      { pollutant: 'CO₂',  unit: 'ppm',   value: randomBetween(1000, 2000) },
+    ]
+    const spike = randomFromArray(SPIKE_TYPES)
+    insights.push({
+      id: generateId(),
+      type: 'monitor-spike',
+      timestamp: spikeTime,
+      locationName: 'Home',
+      pollutant: spike.pollutant,
+      peakValue: spike.value,
+      unit: spike.unit,
     })
   }
 
