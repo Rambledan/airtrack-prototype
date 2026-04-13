@@ -583,12 +583,30 @@ export default function IndoorDetail({
             onDismiss={() => setShowQuestionnaire(false)}
           />
         ) : (
-          <button
-            onClick={() => setShowQuestionnaire(true)}
-            className="text-sm font-semibold text-brand hover:underline"
-          >
-            Answer {LOCATION_TYPES[locationType]?.questions?.length ?? 3} questions to improve accuracy →
-          </button>
+          <div className="space-y-3">
+            {/* Type saved confirmation */}
+            <div className="flex items-center gap-3 p-3 bg-brand/5 rounded-2xl border border-brand/15">
+              <div className="w-8 h-8 rounded-xl bg-brand/10 flex items-center justify-center shrink-0">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 text-brand" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  {TYPE_ICONS[locationType]}
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900">{LOCATION_TYPES[locationType]?.label}</p>
+                <p className="text-xs text-gray-400">Location type saved</p>
+              </div>
+              <svg viewBox="0 0 24 24" className="w-4 h-4 text-brand shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </div>
+            {/* Questionnaire prompt */}
+            <button
+              onClick={() => setShowQuestionnaire(true)}
+              className="text-sm font-semibold text-brand hover:underline"
+            >
+              Improve accuracy with {LOCATION_TYPES[locationType]?.questions?.length ?? 3} questions →
+            </button>
+          </div>
         )}
       </div>
 
