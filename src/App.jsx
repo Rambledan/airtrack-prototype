@@ -14,6 +14,7 @@ import RunningDetail from './components/feed/RunningDetail'
 import IndoorDetail from './components/feed/IndoorDetail'
 import MonitorShopScreen from './components/indoor/MonitorShopScreen'
 import MonitorSetupFlow from './components/indoor/MonitorSetupFlow'
+import { LOCATION_NAME_TO_TYPE } from './data/locationProfiles'
 import TimeOptimization from './components/optimization/TimeOptimization'
 import RouteOptimizationDetail from './components/optimization/RouteOptimizationDetail'
 import SplashScreen from './components/onboarding/SplashScreen'
@@ -165,6 +166,20 @@ function AppContent() {
     setDetailView({ type: 'routeOptimization', segment, fromView: null })
   }
 
+  // Compute effective location profiles (real + dev sim override)
+  const effectiveLocationProfiles = (() => {
+    const override = DEV_MODE && devSim ? devSim.sim.locationProfilesOverride : null
+    if (override === 'none') return {}
+    if (override === 'all') {
+      const autoProfiles = Object.entries(LOCATION_NAME_TO_TYPE).reduce((acc, [name, type]) => {
+        acc[name] = { type, answers: {} }
+        return acc
+      }, {})
+      return { ...autoProfiles, ...locationProfiles }
+    }
+    return locationProfiles
+  })()
+
   // Check if content should be locked for detail views
   const isDetailLocked = (type, segment) => {
     if (isPremium) return false
@@ -228,7 +243,7 @@ function AppContent() {
             <IndoorDetail
               segment={detailView.segment}
               onBack={() => setDetailView(null)}
-              locationProfiles={locationProfiles}
+              locationProfiles={effectiveLocationProfiles}
               monitorLocations={monitorLocations}
               onSaveLocationProfile={handleSaveLocationProfile}
               onSetupMonitor={(seg) => setDetailView({ type: 'monitorSetup', segment: seg })}
@@ -354,6 +369,7 @@ function AppContent() {
               onViewTimeOptimization={handleViewTimeOptimization}
               userState={user.state}
               onLockedTap={handleLockedTap}
+              locationProfiles={effectiveLocationProfiles}
             />
           </>
         )

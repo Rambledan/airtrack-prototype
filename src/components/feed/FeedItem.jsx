@@ -18,6 +18,7 @@ export default function FeedItem({
   onViewTimeOptimization,
   userState,
   onLockedTap,
+  locationProfiles,
 }) {
   // Determine if this item should be locked based on user state
   const isLocked = () => {
@@ -65,6 +66,7 @@ export default function FeedItem({
             onViewIndoorDetail={locked ? handleLockedTap : onViewIndoorDetail}
             onViewRouteOptimization={locked ? handleLockedTap : onViewRouteOptimization}
             onViewTimeOptimization={locked ? handleLockedTap : onViewTimeOptimization}
+            locationProfile={item.activityType === 'indoor' ? locationProfiles?.[item.location] : undefined}
           />
         </LockedOverlay>
       )

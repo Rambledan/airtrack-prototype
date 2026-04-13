@@ -7,9 +7,11 @@ import NotificationSection from './sections/NotificationSection'
 import PersonaSection from './sections/PersonaSection'
 import TimeSimSection from './sections/TimeSimSection'
 import VersionHistorySection from './sections/VersionHistorySection'
+import LocationsSection from './sections/LocationsSection'
 
 const SECTIONS = [
   { id: 'personas', label: 'Personas', emoji: '👤', Component: PersonaSection },
+  { id: 'locations', label: 'Locations', emoji: '📍', Component: LocationsSection },
   { id: 'user-state', label: 'User State', emoji: '🔑', Component: UserStateSection },
   { id: 'permissions', label: 'Permissions', emoji: '🔒', Component: PermissionsSection },
   { id: 'onboarding', label: 'Onboarding', emoji: '🚀', Component: OnboardingSection },

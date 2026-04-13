@@ -1,4 +1,5 @@
 import ScoreBadge, { getScoreColor } from '../shared/AqiScoreBadge'
+import { LOCATION_TYPES, EXAMPLE_LOCATIONS } from '../../data/locationProfiles'
 
 // Activity icons (stroke style, colored by activity type)
 const ACTIVITY_ICONS = {
@@ -618,6 +619,7 @@ export default function ActivitySegment({
   onViewRouteOptimization,
   onViewTimeOptimization,
   segment,
+  locationProfile,
 }) {
   // Render star segment if applicable — now includes map + coaching + ratings
   if (isStarSegment && starReason) {
@@ -647,12 +649,28 @@ export default function ActivitySegment({
   }
 
   const icon = ACTIVITY_ICONS[activityType] || ACTIVITY_ICONS.walking
-  const label = ACTIVITY_LABELS[activityType] || 'Activity'
   const colors = ACTIVITY_COLORS[activityType] || ACTIVITY_COLORS.walking
   const gradientClasses = getScoreGradient(score)
 
   const isRunning = activityType === 'running'
   const isIndoor = activityType === 'indoor'
+
+  // Enriched indoor display when a location profile with type is set
+  const hasLocationProfile = isIndoor && locationProfile?.type
+  const locationTypeLabel = hasLocationProfile
+    ? (LOCATION_TYPES[locationProfile.type]?.label || 'Indoors')
+    : null
+  const label = hasLocationProfile
+    ? locationTypeLabel
+    : (ACTIVITY_LABELS[activityType] || 'Activity')
+
+  // Deterministic area name for Street View (matches IndoorDetail logic)
+  const segSeed = (segment?.id || location || '').split('').reduce((s, c) => s + c.charCodeAt(0), 0)
+  const exampleLoc = EXAMPLE_LOCATIONS[segSeed % EXAMPLE_LOCATIONS.length]
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  const indoorStreetViewUrl = hasLocationProfile && apiKey
+    ? `https://maps.googleapis.com/maps/api/streetview?location=${exampleLoc.lat},${exampleLoc.lng}&size=640x200&fov=90&key=${apiKey}`
+    : null
   const isOutdoor = OUTDOOR_ACTIVITIES.includes(activityType)
   const showPotentialScore = potentialScore && potentialScore > score
   const hasPotentialActivities = ['running', 'car', 'walking', 'cycling'].includes(activityType)
@@ -680,9 +698,24 @@ export default function ActivitySegment({
         <RouteMap routePoints={routePoints} score={score} />
       )}
 
-      {/* Building facade for indoor activities */}
+      {/* Indoor image: street view when profile set, else interior photo */}
       {isIndoor && (
-        <BuildingFacade location={location} segmentId={segment?.id} />
+        hasLocationProfile && indoorStreetViewUrl ? (
+          <div className="relative rounded-2xl overflow-hidden mb-3" style={{ height: '100px' }}>
+            <img
+              src={indoorStreetViewUrl}
+              alt={`${locationTypeLabel} · ${exampleLoc.name}`}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between">
+              <span className="text-[11px] font-semibold text-white drop-shadow">{location}</span>
+              <span className="text-[10px] text-white/70 drop-shadow">{exampleLoc.name}</span>
+            </div>
+          </div>
+        ) : (
+          <BuildingFacade location={location} segmentId={segment?.id} />
+        )
       )}
 
       <div className="flex items-start gap-3">
@@ -718,10 +751,12 @@ export default function ActivitySegment({
             <span className="text-[11px] text-gray-500">{formatTime(startTime)}</span>
             <span className="text-[11px] text-gray-300">•</span>
             <span className="text-[11px] text-gray-500">{formatDuration(durationMinutes)}</span>
-            {location && (
+            {(location || hasLocationProfile) && (
               <>
                 <span className="text-[11px] text-gray-300">•</span>
-                <span className="text-[11px] text-gray-400 truncate">{location}</span>
+                <span className="text-[11px] text-gray-400 truncate">
+                  {hasLocationProfile ? exampleLoc.name : location}
+                </span>
               </>
             )}
           </div>

@@ -104,6 +104,7 @@ const DEFAULT_SIM = {
   notificationStrategy: 'moderate',
   simulatedDaysWithApp: 0,
   activePersona: null,
+  locationProfilesOverride: null, // null | 'none' | 'all'
 }
 
 export function DevSimProvider({ children }) {
@@ -200,6 +201,10 @@ export function DevSimProvider({ children }) {
     updateSim(prev => ({ ...prev, simulatedDaysWithApp: days }))
   }, [updateSim])
 
+  const setLocationProfilesOverride = useCallback((value) => {
+    updateSim(prev => ({ ...prev, locationProfilesOverride: value }))
+  }, [updateSim])
+
   const resetSimulation = useCallback(() => {
     updateSim(DEFAULT_SIM)
   }, [updateSim])
@@ -256,6 +261,9 @@ export function DevSimProvider({ children }) {
     setStrategy,
     setDaysWithApp,
     resetSimulation,
+
+    // Location profiles override
+    setLocationProfilesOverride,
 
     // Flow control
     setFlowStateOverride,

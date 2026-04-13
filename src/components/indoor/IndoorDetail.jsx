@@ -351,8 +351,16 @@ export default function IndoorDetail({
   const [showQuestionnaire, setShowQuestionnaire] = useState(false)
 
   const { dayLabel, time } = formatDate(segment.startTime)
-  const locationType = segment.locationType || LOCATION_NAME_TO_TYPE[segment.location] || 'home'
   const profile = locationProfiles?.[segment.location]
+  // Profile type takes precedence, then segment auto-detection, then fallback
+  const locationType = profile?.type || segment.locationType || LOCATION_NAME_TO_TYPE[segment.location] || 'home'
+
+  const handleTypeChange = (newType) => {
+    if (newType !== locationType) {
+      onSaveLocationProfile?.(segment.location, newType, {})
+      setShowQuestionnaire(false)
+    }
+  }
   const monitor = monitorLocations?.[segment.location]
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
@@ -434,60 +442,67 @@ export default function IndoorDetail({
       <IndoorForecastCard locationType={locationType} segmentId={segment.id} />
 
       {/* Location profile section */}
-      {profile ? (
-        <div className="bg-green-50 rounded-3xl p-4 border border-green-100 flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 text-green-700" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm space-y-4">
+        {/* Type selector */}
+        <div>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Location type</p>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(LOCATION_TYPES).map(([key, cfg]) => {
+              const isSelected = locationType === key
+              return (
+                <button
+                  key={key}
+                  onClick={() => handleTypeChange(key)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                    isSelected
+                      ? 'bg-brand text-white border-brand shadow-sm'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-brand/40 hover:text-brand'
+                  }`}
+                >
+                  {cfg.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Profile answers area */}
+        {profile?.answers && Object.keys(profile.answers).length > 0 && !showQuestionnaire ? (
+          <div className="flex items-center gap-3 bg-green-50 rounded-2xl p-3 border border-green-100">
+            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-green-700" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6L9 17l-5-5" />
               </svg>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-green-800">
-                {LOCATION_TYPES[profile.type]?.label || 'Location'} profile saved
-              </p>
-              <p className="text-xs text-gray-600 mt-0.5">
-                {formatLocationProfileSummary(profile.type, profile.answers)}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowQuestionnaire(true)}
-            className="text-xs text-brand font-medium shrink-0 hover:underline"
-          >
-            Edit
-          </button>
-        </div>
-      ) : showQuestionnaire ? (
-        <LocationQuestionnaire
-          locationType={locationType}
-          existingAnswers={profile?.answers}
-          onSave={(answers) => {
-            onSaveLocationProfile?.(segment.location, locationType, answers)
-            setShowQuestionnaire(false)
-          }}
-          onDismiss={() => setShowQuestionnaire(false)}
-        />
-      ) : (
-        <div className="bg-white rounded-3xl p-4 border border-dashed border-gray-200 flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center shrink-0 mt-0.5">
-            <svg viewBox="0 0 24 24" className="w-4 h-4 text-brand" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 16v-4M12 8h.01" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-900">Help us estimate pollution more accurately</p>
-            <p className="text-xs text-gray-500 mt-0.5 mb-3">Answer 3 quick questions about this location.</p>
+            <p className="text-xs text-gray-700 flex-1">
+              {formatLocationProfileSummary(locationType, profile.answers)}
+            </p>
             <button
               onClick={() => setShowQuestionnaire(true)}
-              className="text-sm font-semibold text-brand hover:underline"
+              className="text-xs text-brand font-semibold shrink-0 hover:underline"
             >
-              Set location profile →
+              Edit
             </button>
           </div>
-        </div>
-      )}
+        ) : showQuestionnaire ? (
+          <LocationQuestionnaire
+            locationType={locationType}
+            existingAnswers={profile?.answers}
+            onSave={(answers) => {
+              onSaveLocationProfile?.(segment.location, locationType, answers)
+              setShowQuestionnaire(false)
+            }}
+            onDismiss={() => setShowQuestionnaire(false)}
+          />
+        ) : (
+          <button
+            onClick={() => setShowQuestionnaire(true)}
+            className="text-sm font-semibold text-brand hover:underline"
+          >
+            Answer {LOCATION_TYPES[locationType]?.questions?.length ?? 3} questions to improve accuracy →
+          </button>
+        )}
+      </div>
 
       {/* Ventilation rating */}
       <VentilationCard segment={segment} />
