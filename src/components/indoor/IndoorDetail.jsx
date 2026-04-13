@@ -339,6 +339,78 @@ function AddMonitorCard({ onShop, onSetup }) {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
+// ── Location type popover (bottom sheet) ─────────────────────────────────────
+
+const TYPE_ICONS = {
+  home:          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10" />,
+  office:        <><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 3H8M12 3v4" /></>,
+  gym:           <path d="M6 4v16M18 4v16M6 12h12M3 8h3M18 8h3M3 16h3M18 16h3" />,
+  eatery:        <path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3" />,
+  industrial:    <><rect x="2" y="7" width="20" height="14" rx="1" /><path d="M2 12l5-5 4 4 4-4 5 5M12 7v5" /></>,
+  entertainment: <><circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16 10 8" /></>,
+}
+
+function LocationTypePopover({ currentType, onSelect, onClose }) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/50 z-40"
+        onClick={onClose}
+      />
+      {/* Bottom sheet */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl pb-8 max-w-lg mx-auto shadow-2xl">
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+
+        <div className="px-5 pb-2 pt-3">
+          <h3 className="text-base font-bold text-gray-900">What type of place is this?</h3>
+          <p className="text-sm text-gray-500 mt-0.5">Helps us estimate indoor air quality more accurately.</p>
+        </div>
+
+        <div className="px-5 grid grid-cols-2 gap-3 mt-3">
+          {Object.entries(LOCATION_TYPES).map(([key, cfg]) => {
+            const isSelected = currentType === key
+            return (
+              <button
+                key={key}
+                onClick={() => { onSelect(key); onClose() }}
+                className={`flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-colors ${
+                  isSelected
+                    ? 'bg-brand/10 border-brand/30 text-brand'
+                    : 'bg-gray-50 border-gray-100 text-gray-700 hover:border-brand/20 hover:bg-brand/5'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                  isSelected ? 'bg-brand/15' : 'bg-white'
+                }`}>
+                  <svg viewBox="0 0 24 24" className={`w-4 h-4 ${isSelected ? 'text-brand' : 'text-gray-500'}`} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    {TYPE_ICONS[key]}
+                  </svg>
+                </div>
+                <span className="text-sm font-semibold leading-tight">{cfg.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="px-5 mt-4">
+          <button
+            onClick={onClose}
+            className="w-full py-3 text-sm text-gray-500 font-medium hover:text-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+
 export default function IndoorDetail({
   segment,
   onBack,
@@ -349,22 +421,17 @@ export default function IndoorDetail({
   onShopMonitor,
 }) {
   const [showQuestionnaire, setShowQuestionnaire] = useState(false)
+  const [showTypePopover, setShowTypePopover] = useState(false)
 
   const { dayLabel, time } = formatDate(segment.startTime)
   const profile = locationProfiles?.[segment.location]
-  // Profile type takes precedence, then segment auto-detection, then fallback
+  // profile.type is the user-confirmed type; fallback chain used for forecast/tips only
+  const hasUserSetType = !!profile?.type
   const locationType = profile?.type || segment.locationType || LOCATION_NAME_TO_TYPE[segment.location] || 'home'
 
-  const handleTypeChange = (newType) => {
-    if (newType !== locationType) {
-      onSaveLocationProfile?.(segment.location, newType, {})
-      setShowQuestionnaire(false)
-    }
-  }
   const monitor = monitorLocations?.[segment.location]
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
-  // Deterministically pick a Street View / map location
   const seed = charSum(segment.id || segment.location || '')
   const loc = EXAMPLE_LOCATIONS[seed % EXAMPLE_LOCATIONS.length]
 
@@ -375,6 +442,10 @@ export default function IndoorDetail({
   const staticMapUrl = apiKey
     ? `https://maps.googleapis.com/maps/api/staticmap?center=${loc.lat},${loc.lng}&zoom=15&size=640x180&markers=color:red%7C${loc.lat},${loc.lng}&key=${apiKey}`
     : null
+
+  const typeLabel = LOCATION_TYPES[locationType]?.label || ''
+  // Only show "location name" label if it differs from the type label
+  const locationLabel = segment.location !== typeLabel ? segment.location : null
 
   return (
     <div className="space-y-4">
@@ -394,6 +465,22 @@ export default function IndoorDetail({
           </h2>
           <p className="text-sm text-gray-500">{dayLabel} · {time} · {formatDuration(segment.durationMinutes)}</p>
         </div>
+        <button
+          onClick={() => setShowTypePopover(true)}
+          className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${
+            hasUserSetType
+              ? 'bg-white border-gray-200 text-gray-600 hover:border-brand/40 hover:text-brand'
+              : 'bg-brand text-white border-brand hover:bg-brand/90'
+          }`}
+        >
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {hasUserSetType
+              ? <><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></>
+              : <><path d="M12 5v14M5 12h14" /></>
+            }
+          </svg>
+          {hasUserSetType ? 'Edit location' : 'Save location'}
+        </button>
       </div>
 
       {/* Street View */}
@@ -412,10 +499,15 @@ export default function IndoorDetail({
             <p className="text-xs text-gray-400">Street View unavailable</p>
           </div>
         )}
-        <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between">
-          <span className="text-xs font-semibold text-white drop-shadow">{segment.location}</span>
-          <span className="text-[10px] text-white/70 drop-shadow">{loc.name}</span>
-        </div>
+        {/* Only show labels once user has confirmed the type */}
+        {hasUserSetType && (
+          <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between">
+            <span className="text-xs font-semibold text-white drop-shadow">{typeLabel}</span>
+            {locationLabel && (
+              <span className="text-[10px] text-white/70 drop-shadow">{locationLabel}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Static map */}
@@ -442,32 +534,28 @@ export default function IndoorDetail({
       <IndoorForecastCard locationType={locationType} segmentId={segment.id} />
 
       {/* Location profile section */}
-      <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm space-y-4">
-        {/* Type selector */}
-        <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Location type</p>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(LOCATION_TYPES).map(([key, cfg]) => {
-              const isSelected = locationType === key
-              return (
-                <button
-                  key={key}
-                  onClick={() => handleTypeChange(key)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                    isSelected
-                      ? 'bg-brand text-white border-brand shadow-sm'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-brand/40 hover:text-brand'
-                  }`}
-                >
-                  {cfg.label}
-                </button>
-              )
-            })}
+      <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm">
+        {!hasUserSetType ? (
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center shrink-0 mt-0.5">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 text-brand" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-900">Save this location</p>
+              <p className="text-xs text-gray-500 mt-0.5 mb-3 leading-relaxed">
+                Tell us what type of place this is for a more accurate indoor AQ forecast and personalised tips.
+              </p>
+              <button
+                onClick={() => setShowTypePopover(true)}
+                className="text-sm font-semibold text-brand hover:underline"
+              >
+                Set location type →
+              </button>
+            </div>
           </div>
-        </div>
-
-        {/* Profile answers area */}
-        {profile?.answers && Object.keys(profile.answers).length > 0 && !showQuestionnaire ? (
+        ) : profile?.answers && Object.keys(profile.answers).length > 0 && !showQuestionnaire ? (
           <div className="flex items-center gap-3 bg-green-50 rounded-2xl p-3 border border-green-100">
             <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center shrink-0">
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-green-700" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -520,6 +608,18 @@ export default function IndoorDetail({
         <AddMonitorCard
           onShop={() => onShopMonitor?.(segment)}
           onSetup={() => onSetupMonitor?.(segment)}
+        />
+      )}
+
+      {/* Location type popover */}
+      {showTypePopover && (
+        <LocationTypePopover
+          currentType={hasUserSetType ? locationType : null}
+          onSelect={(newType) => {
+            onSaveLocationProfile?.(segment.location, newType, {})
+            setShowQuestionnaire(false)
+          }}
+          onClose={() => setShowTypePopover(false)}
         />
       )}
     </div>
