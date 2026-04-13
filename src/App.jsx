@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import LondonMarathonPage from './components/marathon/LondonMarathonPage'
 import { UserProvider, useUser } from './contexts/UserContext'
 import { DevSimProvider, useDevSim } from './contexts/DevSimContext'
@@ -64,14 +64,33 @@ function AppContent() {
   const [detailView, setDetailView] = useState(null)
   const [flowState, _setFlowState] = useState(FLOW_STATES.NONE)
   const [pendingLockedItem, setPendingLockedItem] = useState(null)
-  const [locationProfiles, setLocationProfiles] = useState({})
-  const [monitorLocations, setMonitorLocations] = useState({})
+  const [locationProfiles, setLocationProfiles] = useState(() => {
+    try {
+      const stored = localStorage.getItem('airtrack_location_profiles')
+      return stored ? JSON.parse(stored) : {}
+    } catch { return {} }
+  })
+  const [monitorLocations, setMonitorLocations] = useState(() => {
+    try {
+      const stored = localStorage.getItem('airtrack_monitor_locations')
+      return stored ? JSON.parse(stored) : {}
+    } catch { return {} }
+  })
 
   // Wrapper that also clears dev override
   const setFlowState = (state) => {
     _setFlowState(state)
     if (devSim) devSim.setFlowStateOverride(null)
   }
+
+  // Persist location profiles + monitor locations to localStorage
+  useEffect(() => {
+    localStorage.setItem('airtrack_location_profiles', JSON.stringify(locationProfiles))
+  }, [locationProfiles])
+
+  useEffect(() => {
+    localStorage.setItem('airtrack_monitor_locations', JSON.stringify(monitorLocations))
+  }, [monitorLocations])
 
   // Apply dev flow override when set
   const effectiveFlowState = flowOverride || flowState
