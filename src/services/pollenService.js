@@ -16,11 +16,123 @@ const API_BASE = 'https://pollen.googleapis.com/v1/forecast:lookup'
 //       displayName: string,
 //       inSeason: boolean,
 //       value: 0–5,
-//       category: string,   // 'None' | 'Very Low' | 'Low' | 'Moderate' | 'High' | 'Very High'
+//       category: string,
 //       healthRecommendations: string[],
+//       plants: [            // species within this type
+//         {
+//           code: string,    // e.g. 'BIRCH', 'OAK'
+//           displayName: string,
+//           inSeason: boolean,
+//           value: 0–5,
+//           category: string,
+//           family: string,  // botanical family, e.g. 'Betulaceae'
+//           season: string,  // e.g. 'February to April'
+//           crossReactivity: string,
+//         }
+//       ]
 //     }
 //   ]
 // }
+
+// ── Mock plant species (London, late April — realistic seasonal profile) ──────
+const MOCK_PLANTS = {
+  TREE: [
+    {
+      code: 'BIRCH',
+      displayName: 'Birch',
+      inSeason: true,
+      value: 4,
+      category: 'Very High',
+      family: 'Betulaceae',
+      season: 'March to May',
+      crossReactivity: 'May cause reactions in people allergic to Alder or Hazel pollen.',
+    },
+    {
+      code: 'OAK',
+      displayName: 'Oak',
+      inSeason: true,
+      value: 3,
+      category: 'High',
+      family: 'Fagaceae',
+      season: 'April to June',
+      crossReactivity: 'Cross-reactivity with Beech and Chestnut pollen reported.',
+    },
+    {
+      code: 'PLANE',
+      displayName: 'London Plane',
+      inSeason: true,
+      value: 3,
+      category: 'High',
+      family: 'Platanaceae',
+      season: 'April to May',
+      crossReactivity: 'Limited cross-reactivity with other species.',
+    },
+    {
+      code: 'ASH',
+      displayName: 'Ash',
+      inSeason: true,
+      value: 2,
+      category: 'Moderate',
+      family: 'Oleaceae',
+      season: 'March to May',
+      crossReactivity: 'Cross-reactivity with Olive pollen reported.',
+    },
+    {
+      code: 'ALDER',
+      displayName: 'Alder',
+      inSeason: false,
+      value: 0,
+      category: 'None',
+      family: 'Betulaceae',
+      season: 'January to April',
+      crossReactivity: 'Cross-reactivity with Birch and Hazel pollen.',
+    },
+  ],
+  GRASS: [
+    {
+      code: 'TIMOTHY',
+      displayName: 'Timothy',
+      inSeason: true,
+      value: 2,
+      category: 'Moderate',
+      family: 'Poaceae',
+      season: 'May to August',
+      crossReactivity: 'High cross-reactivity with most other grass species.',
+    },
+    {
+      code: 'RYEGRASS',
+      displayName: 'Ryegrass',
+      inSeason: true,
+      value: 1,
+      category: 'Very Low',
+      family: 'Poaceae',
+      season: 'May to August',
+      crossReactivity: 'Cross-reactive with most other temperate grasses.',
+    },
+  ],
+  WEED: [
+    {
+      code: 'MUGWORT',
+      displayName: 'Mugwort',
+      inSeason: false,
+      value: 0,
+      category: 'None',
+      family: 'Asteraceae',
+      season: 'July to September',
+      crossReactivity: 'Cross-reactivity with Ragweed and some food allergens reported.',
+    },
+    {
+      code: 'NETTLE',
+      displayName: 'Nettle',
+      inSeason: false,
+      value: 0,
+      category: 'None',
+      family: 'Urticaceae',
+      season: 'May to September',
+      crossReactivity: 'Limited cross-reactivity with other weed species.',
+    },
+  ],
+}
 
 // ── Mock data (London spring — realistic seasonal profile) ───────────────────
 const MOCK_DATA = {
@@ -41,6 +153,7 @@ const MOCK_DATA = {
         'Shower and change clothes after spending time outside.',
         'Keep windows closed during peak pollen hours (5am–10am).',
       ],
+      plants: MOCK_PLANTS.TREE,
     },
     {
       code: 'GRASS',
@@ -52,6 +165,7 @@ const MOCK_DATA = {
         'Take antihistamines before heading outdoors if you are sensitive.',
         'Avoid mowing lawns or being near freshly cut grass.',
       ],
+      plants: MOCK_PLANTS.GRASS,
     },
     {
       code: 'WEED',
@@ -60,22 +174,48 @@ const MOCK_DATA = {
       value: 0,
       category: 'None',
       healthRecommendations: [],
+      plants: MOCK_PLANTS.WEED,
     },
   ],
 }
 
 // ── Parser: Google API response → normalised shape ───────────────────────────
+function parsePlant(p) {
+  return {
+    code: p.code,
+    displayName: p.displayName || p.code,
+    inSeason: !!p.inSeason,
+    value: p.indexInfo?.value ?? 0,
+    category: p.indexInfo?.category || 'None',
+    family: p.plantDescription?.family || '',
+    season: p.plantDescription?.season || '',
+    crossReactivity: p.plantDescription?.crossReactivity || '',
+  }
+}
+
 function parseResponse(json) {
   const dayInfo = json?.dailyInfo?.[0]
   if (!dayInfo) throw new Error('No daily info in pollen response')
 
-  const { date, pollenTypeInfo = [] } = dayInfo
+  const { date, pollenTypeInfo = [], plantInfo = [] } = dayInfo
 
   const types = ['TREE', 'GRASS', 'WEED'].map((code) => {
     const info = pollenTypeInfo.find((p) => p.code === code)
+
+    // Plants belonging to this type
+    const plants = plantInfo
+      .filter((p) => p.plantDescription?.type === code)
+      .map(parsePlant)
+      .sort((a, b) => b.value - a.value)
+
     if (!info) {
-      return { code, displayName: code, inSeason: false, value: 0, category: 'None', healthRecommendations: [] }
+      return {
+        code, displayName: code, inSeason: false,
+        value: 0, category: 'None',
+        healthRecommendations: [], plants,
+      }
     }
+
     return {
       code,
       displayName: info.displayName || code,
@@ -83,6 +223,7 @@ function parseResponse(json) {
       value: info.indexInfo?.value ?? 0,
       category: info.indexInfo?.category || 'None',
       healthRecommendations: info.healthRecommendations || [],
+      plants,
     }
   })
 
@@ -90,8 +231,6 @@ function parseResponse(json) {
 }
 
 // ── Public fetch function ─────────────────────────────────────────────────────
-// Returns normalised pollen data for the given coordinates.
-// Always resolves — never rejects. Falls back to mock on any error.
 export async function fetchPollenData(lat, lng) {
   const apiKey = import.meta.env.VITE_GOOGLE_POLLEN_API_KEY
 
@@ -101,7 +240,8 @@ export async function fetchPollenData(lat, lng) {
   }
 
   try {
-    const url = `${API_BASE}?key=${apiKey}&location.latitude=${lat}&location.longitude=${lng}&days=1`
+    // plantsDescription=true adds plantInfo[] to the response
+    const url = `${API_BASE}?key=${apiKey}&location.latitude=${lat}&location.longitude=${lng}&days=1&plantsDescription=true`
     const response = await fetch(url)
 
     if (!response.ok) {

@@ -37,21 +37,115 @@ const TYPE_ICON = {
   ),
 }
 
-// ── Single pollen-type row ────────────────────────────────────────────────────
-function PollenRow({ type, showRecommendations }) {
-  const { code, displayName, inSeason, value, healthRecommendations } = type
-  const cfg = LEVEL_CONFIG[Math.min(value, 5)] || LEVEL_CONFIG[0]
-  const showRecs = showRecommendations && inSeason && value > 1 && healthRecommendations.length > 0
+// ── Individual plant species row ──────────────────────────────────────────────
+function PlantRow({ plant, expanded }) {
+  const cfg = LEVEL_CONFIG[Math.min(plant.value, 5)] || LEVEL_CONFIG[0]
 
   return (
     <div className="space-y-2">
+      <div className="flex items-center gap-2.5">
+        {/* UPI dot */}
+        <div className={`w-2 h-2 rounded-full shrink-0 ${plant.inSeason && plant.value > 0 ? cfg.bar : 'bg-gray-200'}`} />
+
+        {/* Name */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-gray-700">{plant.displayName}</span>
+            {plant.family ? (
+              <span className="text-[10px] text-gray-400 italic truncate">{plant.family}</span>
+            ) : null}
+            {!plant.inSeason && (
+              <span className="text-[10px] font-medium text-gray-400 bg-gray-100 rounded-full px-1.5 py-0.5 shrink-0">
+                Off season
+              </span>
+            )}
+          </div>
+          {/* Mini bar */}
+          <div className="flex gap-0.5 mt-1">
+            {[1, 2, 3, 4, 5].map((seg) => (
+              <div
+                key={seg}
+                className={`h-1 flex-1 rounded-full ${seg <= plant.value ? cfg.bar : 'bg-gray-100'}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Category label */}
+        <span className={`shrink-0 text-[10px] font-semibold rounded-full px-2 py-0.5 ${cfg.bg} ${cfg.text}`}>
+          {cfg.label}
+        </span>
+      </div>
+
+      {/* Expanded detail: season + cross-reactivity */}
+      {expanded && (plant.season || plant.crossReactivity) && (
+        <div className="ml-4.5 space-y-1 pl-2 border-l-2 border-gray-100">
+          {plant.season && (
+            <p className="text-[11px] text-gray-400 leading-relaxed">
+              <span className="font-medium text-gray-500">Season:</span> {plant.season}
+            </p>
+          )}
+          {plant.crossReactivity && (
+            <p className="text-[11px] text-gray-400 leading-relaxed">{plant.crossReactivity}</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Single pollen-type row ────────────────────────────────────────────────────
+function PollenRow({ type, showRecommendations }) {
+  const { code, displayName, inSeason, value, healthRecommendations, plants = [] } = type
+  const cfg = LEVEL_CONFIG[Math.min(value, 5)] || LEVEL_CONFIG[0]
+  const showRecs = showRecommendations && inSeason && value > 1 && healthRecommendations.length > 0
+
+  // Default: expand species if any are in-season with value > 0
+  const hasActiveSpecies = plants.some((p) => p.inSeason && p.value > 0)
+  const [speciesOpen, setSpeciesOpen] = useState(hasActiveSpecies)
+  const [expandedPlant, setExpandedPlant] = useState(null)
+
+  if (!plants.length) {
+    // No species data — render as before
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${cfg.bg}`}>
+            <span className={cfg.text}>{TYPE_ICON[code]}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-semibold text-gray-900">{displayName}</span>
+              {!inSeason && (
+                <span className="text-[10px] font-medium text-gray-400 bg-gray-100 rounded-full px-1.5 py-0.5">
+                  Off season
+                </span>
+              )}
+            </div>
+            <div className="flex gap-0.5 mt-1.5">
+              {[1, 2, 3, 4, 5].map((seg) => (
+                <div key={seg} className={`h-1.5 flex-1 rounded-full ${seg <= value ? cfg.bar : 'bg-gray-100'}`} />
+              ))}
+            </div>
+          </div>
+          <span className={`shrink-0 text-xs font-semibold rounded-full px-2.5 py-1 ${cfg.bg} ${cfg.text}`}>
+            {cfg.label}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* Type header row */}
       <div className="flex items-center gap-3">
         {/* Icon */}
         <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${cfg.bg}`}>
           <span className={cfg.text}>{TYPE_ICON[code]}</span>
         </div>
 
-        {/* Name + season tag */}
+        {/* Name + season tag + bar */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-gray-900">{displayName}</span>
@@ -61,15 +155,12 @@ function PollenRow({ type, showRecommendations }) {
               </span>
             )}
           </div>
-
           {/* UPI bar — 5 segments */}
           <div className="flex gap-0.5 mt-1.5">
             {[1, 2, 3, 4, 5].map((seg) => (
               <div
                 key={seg}
-                className={`h-1.5 flex-1 rounded-full transition-all ${
-                  seg <= value ? cfg.bar : 'bg-gray-100'
-                }`}
+                className={`h-1.5 flex-1 rounded-full transition-all ${seg <= value ? cfg.bar : 'bg-gray-100'}`}
               />
             ))}
           </div>
@@ -81,7 +172,7 @@ function PollenRow({ type, showRecommendations }) {
         </span>
       </div>
 
-      {/* Health recommendations (only when inSeason + value > 1) */}
+      {/* Health recommendations */}
       {showRecs && (
         <div className="ml-11 space-y-1">
           {healthRecommendations.slice(0, 2).map((rec, i) => (
@@ -92,6 +183,42 @@ function PollenRow({ type, showRecommendations }) {
           ))}
         </div>
       )}
+
+      {/* Species toggle */}
+      <div className="ml-11">
+        <button
+          onClick={() => setSpeciesOpen((v) => !v)}
+          className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <span>{plants.length} species</span>
+          <svg
+            viewBox="0 0 24 24"
+            className={`w-3 h-3 transition-transform ${speciesOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+
+        {speciesOpen && (
+          <div className="mt-2.5 space-y-3">
+            {plants.map((plant) => (
+              <button
+                key={plant.code}
+                className="w-full text-left"
+                onClick={() => setExpandedPlant(expandedPlant === plant.code ? null : plant.code)}
+              >
+                <PlantRow plant={plant} expanded={expandedPlant === plant.code} />
+              </button>
+            ))}
+            <p className="text-[10px] text-gray-300 pt-0.5">Tap a species for season & allergy info</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
