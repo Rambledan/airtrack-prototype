@@ -28,6 +28,7 @@ import NotificationToast from './components/notifications/NotificationToast'
 import NotificationBanner from './components/notifications/NotificationBanner'
 import PersonalisationCards from './components/personalisation/PersonalisationCards'
 import ProfileSettings from './components/profile/ProfileSettings'
+import PollenSection from './components/pollen/PollenSection'
 
 const DEV_MODE = true
 
@@ -349,6 +350,9 @@ function AppContent() {
               isPremium={isPremium}
               onUpgrade={() => setFlowState(FLOW_STATES.PAYWALL)}
             />
+
+            {/* Pollen data — sits alongside AQ data, fetches independently */}
+            <PollenSection />
 
             {/* Personalisation question cards — registered users only, after 48h, unanswered/undismissed */}
             {(user.state === 'registered_free' || user.state === 'registered_premium') && (
