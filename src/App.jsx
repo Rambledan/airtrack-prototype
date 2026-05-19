@@ -29,6 +29,7 @@ import NotificationBanner from './components/notifications/NotificationBanner'
 import PersonalisationCards from './components/personalisation/PersonalisationCards'
 import ProfileSettings from './components/profile/ProfileSettings'
 import PollenSection from './components/pollen/PollenSection'
+import NewHomeDashboard from './components/home/NewHomeDashboard'
 
 const DEV_MODE = true
 
@@ -457,6 +458,37 @@ function AppContent() {
       default:
         return null
     }
+  }
+
+  // New home dashboard — full-screen layout with its own nav
+  if (activeTab === 'feed') {
+    return (
+      <div className="min-h-screen bg-[#eeeeee] flex flex-col">
+        <div className="max-w-lg mx-auto w-full flex flex-col" style={{ height: '100dvh' }}>
+          <NewHomeDashboard
+            activeNavTab="home"
+            onNavTabChange={(tab) => {
+              if (tab === 'settings') setActiveTab('profile')
+            }}
+          />
+        </div>
+        <RegistrationWall
+          isOpen={effectiveFlowState === FLOW_STATES.REGISTRATION}
+          onClose={() => { setFlowState(FLOW_STATES.NONE); setPendingLockedItem(null) }}
+          onRegister={handleRegister}
+        />
+        <Paywall
+          isOpen={effectiveFlowState === FLOW_STATES.PAYWALL}
+          onSelectPlan={handlePaywallSelect}
+          onClose={() => setFlowState(FLOW_STATES.NONE)}
+          userName={user.profile?.name}
+        />
+        {DEV_MODE && <DevLauncher />}
+        {DEV_MODE && <DevPanel />}
+        <NotificationToast />
+        <NotificationBanner />
+      </div>
+    )
   }
 
   return (
