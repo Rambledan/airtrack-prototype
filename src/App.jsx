@@ -463,8 +463,8 @@ function AppContent() {
   // New home dashboard — full-screen layout with its own nav
   if (activeTab === 'feed') {
     return (
-      <div className="min-h-screen bg-[#eeeeee] flex flex-col">
-        <div className="max-w-lg mx-auto w-full flex flex-col" style={{ height: '100dvh' }}>
+      <div className="bg-[#eeeeee] overflow-hidden" style={{ height: '100dvh' }}>
+        <div className="max-w-lg mx-auto w-full flex flex-col h-full">
           <NewHomeDashboard
             activeNavTab="home"
             onNavTabChange={(tab) => {
