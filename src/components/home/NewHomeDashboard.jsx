@@ -364,7 +364,7 @@ export default function NewHomeDashboard({ activeNavTab = 'home', onNavTabChange
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         <div className="bg-white rounded-[28px] shadow-[0px_-4px_5.45px_0px_rgba(0,0,0,0.06)] px-[10px] pt-[20px] pb-[12px] mx-[-2px]">
 
           {/* Today's air */}
