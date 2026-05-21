@@ -80,7 +80,7 @@ function Tile({ children, className = '', style = {} }) {
 
 function TileTitle({ children }) {
   return (
-    <p className="font-['DM_Sans',sans-serif] font-bold text-[#263238] text-[18px] leading-snug mb-0">
+    <p className="font-['DM_Sans',sans-serif] font-bold text-[#263238] text-[18px] leading-snug mb-0 text-center w-full">
       {children}
     </p>
   )
