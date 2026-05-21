@@ -1,16 +1,9 @@
-// Asset URLs from Figma design (valid for 7 days)
 const ASSETS = {
-  airtrackLogo: 'https://www.figma.com/api/mcp/asset/17a45a62-3649-46fd-b10a-70d41b2bcfeb',
-  locationIcon: 'https://www.figma.com/api/mcp/asset/c5ed90b6-8eee-46e7-9621-c81813e3dfcd',
-  runIcon: 'https://www.figma.com/api/mcp/asset/5e4369de-651b-4197-bb8b-2b40a9b6552a',
-  trendingIcon: 'https://www.figma.com/api/mcp/asset/4bfeca18-f973-47a8-8353-5b7da08b166c',
-  routeIcon: 'https://www.figma.com/api/mcp/asset/8224c8c3-9d68-43a3-9292-6daa40906761',
-  heartIcon: 'https://www.figma.com/api/mcp/asset/6d33036f-4442-4c78-bf78-7771ef397ddb',
-  monitorIcon: 'https://www.figma.com/api/mcp/asset/e3c71215-f2fb-4478-8ff4-5e54d0ee0715',
-  homeNavIcon: 'https://www.figma.com/api/mcp/asset/3bea4dec-1872-435d-b194-d6907e384ab3',
-  analyticsNavIcon: 'https://www.figma.com/api/mcp/asset/9181584a-4b2b-4a73-9770-8151a805c340',
-  groupsNavIcon: 'https://www.figma.com/api/mcp/asset/6884af51-68a1-4076-a2eb-5ee1ddf8a5c7',
-  settingsNavIcon: 'https://www.figma.com/api/mcp/asset/102471cd-9f34-4ede-a0ac-8dceccede3b5',
+  airtrackLogo: '/airtrack-logo-orange.svg',
+  trendingIcon: '/noun-trending-8169830.png',
+  routeIcon: '/noun-route-41620.png',
+  monitorIcon: '/noun-oxygen-sensor-8080122.png',
+  // Remaining icons kept as inline SVG below (locationIcon, runIcon, heartIcon, nav icons)
 }
 
 // Dummy data — all editable for prototype demos
@@ -148,13 +141,81 @@ function PollenTile() {
   )
 }
 
+// Inline SVG icons
+function RunIcon({ size = 48, color = '#263238' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="30" cy="8" r="4" fill={color}/>
+      <path d="M20 16l4 4 6-4 4 8h-6l-2 10-6-4-4 8H8l6-10 4 2 2-6-6-4 6-4z" fill={color}/>
+    </svg>
+  )
+}
+
+function HeartIcon({ size = 36, color = '#263238' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  )
+}
+
+function LocationIcon({ size = 18, color = '#607d8b' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  )
+}
+
+// Nav icons
+function HomeNavIcon({ active }) {
+  const c = active ? '#ff610a' : '#263238'
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  )
+}
+function AnalyticsNavIcon({ active }) {
+  const c = active ? '#ff610a' : '#263238'
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/>
+      <line x1="12" y1="20" x2="12" y2="4"/>
+      <line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  )
+}
+function GroupsNavIcon({ active }) {
+  const c = active ? '#ff610a' : '#263238'
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  )
+}
+function SettingsNavIcon({ active }) {
+  const c = active ? '#ff610a' : '#263238'
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  )
+}
+
 // Cleanest time tile
 function CleanestTimeTile() {
   return (
     <Tile className="flex flex-col gap-[19px] h-[185px] w-full">
       <TileTitle>Cleanest time</TileTitle>
       <div className="flex flex-col items-center gap-[4px] flex-1 justify-center">
-        <img src={ASSETS.runIcon} alt="Run" className="w-[52px] h-[52px] object-contain" />
+        <RunIcon size={52} color="#263238" />
         <p className="font-['DM_Sans',sans-serif] font-normal text-[#1e88e5] text-[24px] leading-snug text-center">
           {DUMMY.cleanestTime}
         </p>
@@ -254,7 +315,7 @@ function HealthTile() {
     <Tile className="flex flex-col gap-[10px] h-[185px] w-full">
       <TileTitle>Health</TileTitle>
       <div className="flex flex-col items-center justify-center flex-1 gap-[10px]">
-        <img src={ASSETS.heartIcon} alt="Health" className="w-[37px] h-[32px] object-contain" />
+        <HeartIcon size={36} color="#263238" />
         <p className="font-['DM_Sans',sans-serif] font-normal text-[#263238] text-[12px] text-center leading-snug">
           {DUMMY.health}
         </p>
@@ -269,7 +330,7 @@ function PerformanceTile() {
     <Tile className="flex flex-col gap-[10px] h-[185px] w-full">
       <TileTitle>Performance</TileTitle>
       <div className="flex flex-col items-center justify-center flex-1 gap-[8px]">
-        <img src={ASSETS.runIcon} alt="Run" className="w-[40px] h-[40px] object-contain" />
+        <RunIcon size={44} color="#263238" />
         <p className="font-['DM_Sans',sans-serif] font-normal text-[#263238] text-[12px] text-center leading-snug">
           {DUMMY.performance}
         </p>
@@ -320,27 +381,27 @@ function AirMonitorTile() {
 // Bottom nav
 function BottomNavNew({ activeTab = 'home', onTabChange }) {
   const tabs = [
-    { id: 'home', label: 'HOME', icon: ASSETS.homeNavIcon },
-    { id: 'analytics', label: 'ANALYTICS', icon: ASSETS.analyticsNavIcon },
-    { id: 'groups', label: 'GROUPS', icon: ASSETS.groupsNavIcon },
-    { id: 'settings', label: 'SETTINGS', icon: ASSETS.settingsNavIcon },
+    { id: 'home', label: 'HOME', Icon: HomeNavIcon },
+    { id: 'analytics', label: 'ANALYTICS', Icon: AnalyticsNavIcon },
+    { id: 'groups', label: 'GROUPS', Icon: GroupsNavIcon },
+    { id: 'settings', label: 'SETTINGS', Icon: SettingsNavIcon },
   ]
   return (
     <div className="bg-[#fafafa] rounded-tl-[32px] rounded-tr-[32px] shadow-[0px_0px_16px_0px_rgba(0,0,0,0.15)] h-[72px] flex items-center justify-around px-2 overflow-hidden">
-      {tabs.map((tab) => {
-        const isActive = tab.id === activeTab
+      {tabs.map(({ id, label, Icon }) => {
+        const isActive = id === activeTab
         return (
           <button
-            key={tab.id}
-            onClick={() => onTabChange?.(tab.id)}
+            key={id}
+            onClick={() => onTabChange?.(id)}
             className="flex flex-col items-center gap-[2px] pt-[8px] flex-1 h-full"
           >
-            <img src={tab.icon} alt={tab.label} className="w-[32px] h-[32px] object-contain" />
+            <Icon active={isActive} />
             <span
               className="font-['DM_Sans',sans-serif] font-normal text-[11px] tracking-wide"
               style={{ color: isActive ? '#ff610a' : '#263238' }}
             >
-              {tab.label}
+              {label}
             </span>
           </button>
         )
@@ -356,7 +417,7 @@ export default function NewHomeDashboard({ activeNavTab = 'home', onNavTabChange
       <div className="flex items-center justify-between px-[27px] pt-[18px] pb-[10px] shrink-0">
         <img src={ASSETS.airtrackLogo} alt="Airtrack" className="w-[36px] h-[33px] object-contain" />
         <div className="flex items-center gap-[4px]">
-          <img src={ASSETS.locationIcon} alt="" className="w-[18px] h-[18px] object-contain" />
+          <LocationIcon />
           <span className="font-['DM_Sans',sans-serif] font-normal text-[#607d8b] text-[14px]">
             {DUMMY.location}
           </span>
