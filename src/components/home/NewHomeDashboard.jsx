@@ -1,5 +1,5 @@
 const ASSETS = {
-  airtrackLogo: '/airtrack-logo-orange.svg',
+  airtrackLogo: '/AirtrackA.png',
   trendingIcon: '/noun-trending-8169830.png',
   routeIcon: '/noun-route-41620.png',
   monitorIcon: '/noun-oxygen-sensor-8080122.png',
