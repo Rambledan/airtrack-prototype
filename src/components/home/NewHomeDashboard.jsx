@@ -142,13 +142,8 @@ function PollenTile() {
 }
 
 // Inline SVG icons
-function RunIcon({ size = 48, color = '#263238' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="30" cy="8" r="4" fill={color}/>
-      <path d="M20 16l4 4 6-4 4 8h-6l-2 10-6-4-4 8H8l6-10 4 2 2-6-6-4 6-4z" fill={color}/>
-    </svg>
-  )
+function RunIcon({ size = 48 }) {
+  return <img src="/Run.png" alt="Run" style={{ width: size, height: size }} className="object-contain" />
 }
 
 function HeartIcon({ size = 36, color = '#263238' }) {
