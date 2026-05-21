@@ -353,7 +353,7 @@ export default function NewHomeDashboard({ activeNavTab = 'home', onNavTabChange
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-[10px] pt-[12px] pb-[8px] shrink-0">
+      <div className="flex items-center justify-between px-[27px] pt-[18px] pb-[10px] shrink-0">
         <img src={ASSETS.airtrackLogo} alt="Airtrack" className="w-[36px] h-[33px] object-contain" />
         <div className="flex items-center gap-[4px]">
           <img src={ASSETS.locationIcon} alt="" className="w-[18px] h-[18px] object-contain" />
